@@ -1,0 +1,113 @@
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import type { ForecastPoint } from "../types/contracts";
+
+/**
+ * SRS 3.1.3: a forecast must never be presented as an unqualified point
+ * estimate — the shaded band here (lower..upper) is required, not optional.
+ * Implemented as two stacked Areas (a transparent base up to `lower`, then
+ * a shaded range from `lower` to `upper`) topped with a Line for the point
+ * forecast — the standard Recharts confidence-band pattern.
+ */
+export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
+  if (data.length === 0) return null;
+
+  const unit = data[0].unit;
+  const chartData = data.map((d) => ({
+    period: d.period,
+    point: d.point,
+    lowerBase: d.lower,
+    bandRange: d.upper - d.lower,
+    lower: d.lower,
+    upper: d.upper,
+  }));
+
+  const formatValue = (v: number) =>
+    unit === "USD" ? `$${(v / 1_000_000).toFixed(0)}M` : `${v.toLocaleString()} ${unit}`;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex items-baseline justify-between mb-2">
+        <h2 className="text-sm font-semibold text-gray-900">Forecast</h2>
+        <span className="text-xs text-gray-400">shaded band = uncertainty interval</span>
+      </div>
+      <ResponsiveContainer width="100%" height={240}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+          <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+          <YAxis tickFormatter={formatValue} tick={{ fontSize: 12 }} width={70} />
+          <Tooltip content={<ForecastTooltip formatValue={formatValue} />} />
+          <Area
+            type="monotone"
+            dataKey="lowerBase"
+            stackId="band"
+            stroke="none"
+            fill="transparent"
+            isAnimationActive={false}
+          />
+          <Area
+            type="monotone"
+            dataKey="bandRange"
+            stackId="band"
+            stroke="none"
+            fill="#0d9488"
+            fillOpacity={0.15}
+            isAnimationActive={false}
+            name="Confidence interval"
+          />
+          <Line
+            type="monotone"
+            dataKey="point"
+            stroke="#0d9488"
+            strokeWidth={2}
+            dot={{ r: 4 }}
+            name="Forecast"
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+interface TooltipDatum {
+  dataKey?: string;
+  value?: number;
+}
+
+function ForecastTooltip({
+  active,
+  payload,
+  label,
+  formatValue,
+}: {
+  active?: boolean;
+  payload?: TooltipDatum[];
+  label?: string;
+  formatValue: (v: number) => string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const point = payload.find((p) => p.dataKey === "point")?.value;
+  const lower = payload.find((p) => p.dataKey === "lower")?.value;
+  const upper = payload.find((p) => p.dataKey === "upper")?.value;
+  if (point === undefined) return null;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-md shadow-sm px-3 py-2 text-xs">
+      <p className="font-medium text-gray-900 mb-1">{label}</p>
+      <p className="text-teal-700">Forecast: {formatValue(point)}</p>
+      {lower !== undefined && upper !== undefined && (
+        <p className="text-gray-500">
+          Range: {formatValue(lower)} – {formatValue(upper)}
+        </p>
+      )}
+    </div>
+  );
+}
