@@ -40,9 +40,11 @@ function NavBar() {
         <NavLink to="/account" className={({ isActive }) => navLinkClass(isActive)}>
           Account
         </NavLink>
-        <NavLink to="/admin" className={({ isActive }) => navLinkClass(isActive)}>
-          Admin
-        </NavLink>
+        {role === "admin" && (
+          <NavLink to="/admin" className={({ isActive }) => navLinkClass(isActive)}>
+            Admin
+          </NavLink>
+        )}
       </div>
       {role && (
         <span className="ml-auto text-xs font-medium text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
