@@ -1,6 +1,7 @@
 import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 import Logo from "./components/Logo";
 import { AuthProvider } from "./lib/auth";
+import { ROLE_LABELS } from "./lib/roles";
 import { useAuth } from "./lib/useAuth";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
@@ -15,7 +16,7 @@ function navLinkClass(isActive: boolean) {
 }
 
 function NavBar() {
-  const { userId } = useAuth();
+  const { userId, role } = useAuth();
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-1">
@@ -42,6 +43,11 @@ function NavBar() {
           Admin
         </NavLink>
       </div>
+      {role && (
+        <span className="ml-auto text-xs font-medium text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
+          {ROLE_LABELS[role]}
+        </span>
+      )}
     </nav>
   );
 }

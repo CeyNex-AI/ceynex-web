@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 
 const PLANNED = ["Saved queries", "Notification preferences", "API keys for programmatic access"];
 
 export default function Account() {
-  const { userId, logout } = useAuth();
+  const { userId, role, logout } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -23,6 +24,15 @@ export default function Account() {
             <div className="text-xs font-medium text-gray-500 mb-1">Signed in as</div>
             <div className="text-sm text-gray-800">{userId ?? "Not signed in"}</div>
           </div>
+
+          {role && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">Role</div>
+              <span className="inline-block text-xs font-medium text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
+                {ROLE_LABELS[role]}
+              </span>
+            </div>
+          )}
 
           <p className="text-xs text-gray-400">
             Demo login — no account verification, profile, or preferences yet.

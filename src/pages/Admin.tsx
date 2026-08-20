@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ROLE_LABELS } from "../lib/roles";
+import { useAuth } from "../lib/useAuth";
 
 /**
  * There's no admin API to back user/role management, so rather than fabricate
@@ -32,10 +35,13 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
 }
 
 export default function Admin() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAdmin) return;
     fetch("/health")
       .then((res) => {
         if (!res.ok) throw new Error(`status ${res.status}`);
@@ -43,7 +49,32 @@ export default function Admin() {
       })
       .then(setHealth)
       .catch(() => setError("Couldn't reach the health endpoint."));
-  }, []);
+  }, [isAdmin]);
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+        <div className="max-w-sm mx-auto">
+          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
+          <div className="bg-white border border-gray-200 rounded-lg p-5">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              This page is restricted to the Admin role. You're signed in as{" "}
+              <span className="font-medium text-gray-800">
+                {role ? ROLE_LABELS[role] : "a guest"}
+              </span>
+              .
+            </p>
+            <Link
+              to="/query"
+              className="inline-block mt-4 text-sm text-teal-700 hover:text-teal-800 font-medium"
+            >
+              Back to Query →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
+import { DEMO_ACCOUNTS, ROLE_LABELS } from "../lib/roles";
 
 const FEATURES = [
   {
@@ -119,6 +120,24 @@ export default function Login() {
           <p className="mt-4 text-center text-xs text-gray-400">
             Demo login — no account verification yet.
           </p>
+
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 text-center">
+              Try a demo role
+            </p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {Object.entries(DEMO_ACCOUNTS).map(([demoEmail, role]) => (
+                <button
+                  key={demoEmail}
+                  type="button"
+                  onClick={() => setEmail(demoEmail)}
+                  className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
+                >
+                  {ROLE_LABELS[role]}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
