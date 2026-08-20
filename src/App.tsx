@@ -1,5 +1,6 @@
 import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 import Logo from "./components/Logo";
+import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./lib/auth";
 import { ROLE_LABELS } from "./lib/roles";
 import { useAuth } from "./lib/useAuth";
@@ -59,10 +60,38 @@ function App() {
         <NavBar />
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/query" element={<Query />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/query"
+            element={
+              <RequireAuth>
+                <Query />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <RequireAuth>
+                <Help />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth>
+                <Account />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireAuth>
+                <Admin />
+              </RequireAuth>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

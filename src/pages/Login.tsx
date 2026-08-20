@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, type Location } from "react-router-dom";
 import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
 import { DEMO_ACCOUNTS, ROLE_LABELS } from "../lib/roles";
@@ -23,8 +23,18 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { userId, login } = useAuth();
+  const location = useLocation();
+  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/query";
+
+  // Handles two cases with one code path: already signed in on load (e.g.
+  // typed "/" directly), or just signed in via handleSubmit below -- either
+  // way userId goes truthy and this fires on the next render. Using an
+  // imperative navigate() call in handleSubmit *and* this guard raced each
+  // other (both try to redirect right after login()), so there's only one now.
+  if (userId) {
+    return <Navigate to={from} replace />;
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,9 +43,9 @@ export default function Login() {
       setError("Enter both an email and a password.");
       return;
     }
-    // No real backend yet — see src/lib/auth.tsx.
+    // No real backend yet — see src/lib/auth.tsx. The guard above redirects
+    // to `from` once this flips userId truthy.
     login(email.trim());
-    navigate("/query");
   }
 
   return (
