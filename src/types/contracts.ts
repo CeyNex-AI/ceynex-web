@@ -1,9 +1,13 @@
 /**
  * TypeScript mirror of the frozen Python contracts in ceynex-core
- * (ceynex/contracts/evidence.py, forecast.py, state.py). Field names match
- * exactly on purpose — this is what the real ceynex-api-gateway response
- * shape will be once it exists, so the frontend doesn't need reshaping when
- * a real backend replaces src/lib/mockQuery.ts.
+ * (ceynex/contracts/evidence.py, forecast.py, state.py). `Evidence` and
+ * `ForecastPoint` match the real POST /api/query response field-for-field.
+ * `QueryResponse` itself doesn't — the deployed endpoint returns
+ * `answer`/`confidence`/`evidence` and no `query` echo, not
+ * `final_answer`/`final_confidence`/`merged_evidence`/`query`. This shape is
+ * kept as the frontend's internal representation regardless; the mapping
+ * lives in src/lib/queryApi.ts so nothing downstream needs to change if the
+ * API response shape moves again.
  */
 
 export type SourceId = "UN_COMTRADE" | "WITS" | "FAOSTAT" | "CBSL" | "JAAF" | "EDB" | "KG" | "MODEL";

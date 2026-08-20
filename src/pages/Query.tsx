@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
-import { runQuery } from "../lib/mockQuery";
+import { runQuery } from "../lib/queryApi";
 import type { QueryResponse } from "../types/contracts";
 
 const EXAMPLE_QUERIES = [
@@ -14,14 +14,21 @@ export default function Query() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<QueryResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!query.trim() || loading) return;
     setLoading(true);
-    const result = await runQuery(query.trim());
-    setResponse(result);
-    setLoading(false);
+    setError(null);
+    try {
+      const result = await runQuery(query.trim());
+      setResponse(result);
+    } catch {
+      setError("Couldn't reach the query service. Try again in a moment.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -61,6 +68,12 @@ export default function Query() {
             </button>
           ))}
         </div>
+
+        {error && (
+          <p className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+            {error}
+          </p>
+        )}
 
         {response && (
           // SRS 3.1.4: evidence sits beside the answer — a two-column flex
