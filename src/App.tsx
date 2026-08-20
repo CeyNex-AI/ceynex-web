@@ -8,6 +8,7 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 import Query from "./pages/Query";
 
 function navLinkClass(isActive: boolean) {
@@ -94,6 +95,7 @@ function App() {
               </RequireAuth>
             }
           />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
