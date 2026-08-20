@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
 
 export default function Login() {
@@ -25,8 +26,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">CeyNex</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <div className="inline-flex items-center gap-2 mb-2">
+            <Logo className="w-8 h-8" />
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">CeyNex</h1>
+          </div>
+          <p className="text-sm text-gray-500">
             Multi-agent trade intelligence for Sri Lanka's export economy
           </p>
         </div>
