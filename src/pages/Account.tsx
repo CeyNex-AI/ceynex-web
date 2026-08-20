@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 
+const PLANNED = ["Saved queries", "Notification preferences", "API keys for programmatic access"];
+
 export default function Account() {
   const { userId, logout } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +35,20 @@ export default function Account() {
           >
             Sign out
           </button>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+            Planned, not built yet
+          </p>
+          <ul className="space-y-1.5">
+            {PLANNED.map((item) => (
+              <li key={item} className="text-sm text-gray-500 flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-gray-300" />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

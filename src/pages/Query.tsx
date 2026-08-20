@@ -8,6 +8,15 @@ import type { QueryResponse } from "../types/contracts";
 const EXAMPLE_QUERIES = [
   "How are apparel exports to the United States doing?",
   "What are Sri Lanka's top apparel export markets?",
+  "How is Ceylon tea performing in export markets?",
+  "What's the outlook for cinnamon exports next year?",
+];
+
+const DATA_SOURCES = [
+  { id: "EDB", name: "Export Development Board" },
+  { id: "JAAF", name: "Joint Apparel Association Forum" },
+  { id: "UN Comtrade", name: "UN trade statistics" },
+  { id: "FAOSTAT", name: "FAO agriculture statistics" },
 ];
 
 export default function Query() {
@@ -99,6 +108,21 @@ export default function Query() {
             <EvidencePanel evidence={response.merged_evidence} />
           </div>
         )}
+
+        <div className="mt-10 pt-6 border-t border-gray-200">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+            Data sources
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {DATA_SOURCES.map((source) => (
+              <span key={source.id} className="text-xs text-gray-500">
+                <span className="font-mono font-medium text-gray-600">{source.id}</span>
+                {" — "}
+                {source.name}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

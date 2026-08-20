@@ -19,6 +19,10 @@ const FAQS = [
     q: "Why did part of my question go unanswered?",
     a: "Some sectors or agents are still being built out. If a question spans more than one, CeyNex answers what it can and says plainly which part it couldn't cover, instead of guessing.",
   },
+  {
+    q: "Where does CeyNex's data come from?",
+    a: "Sri Lanka's Export Development Board (EDB) and the Joint Apparel Association Forum (JAAF) for apparel, UN Comtrade for cross-sector trade flows, and FAOSTAT for agriculture. Each evidence entry names which one a figure came from.",
+  },
 ];
 
 export default function Help() {
