@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
-import { fetchHistory, type HistoryItem } from "../lib/historyApi";
+import { fetchHistory, saveQuery, unsaveQuery, type HistoryItem } from "../lib/historyApi";
 import { runQuery } from "../lib/queryApi";
 import type { QueryResponse } from "../types/contracts";
 
@@ -30,20 +30,69 @@ function timeAgo(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-/** SRS 3.5.2 -- a signed-in user's own past queries, clickable to reuse. */
-function HistoryPanel({ items, onReuse }: { items: HistoryItem[]; onReuse: (query: string) => void }) {
-  if (items.length === 0) return null;
+/** SRS 3.5.2 -- a signed-in user's own past queries, clickable to reuse, and
+ * bookmarkable for later (the star), filterable to just the starred ones. */
+function HistoryPanel({
+  items,
+  savedOnly,
+  onToggleSavedOnly,
+  onReuse,
+  onToggleSaved,
+}: {
+  items: HistoryItem[];
+  savedOnly: boolean;
+  onToggleSavedOnly: (savedOnly: boolean) => void;
+  onReuse: (query: string) => void;
+  onToggleSaved: (item: HistoryItem) => void;
+}) {
+  if (items.length === 0 && !savedOnly) return null;
 
   return (
     <div className="mb-8">
-      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Recent queries</p>
+      <div className="flex items-center gap-3 mb-2">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+          {savedOnly ? "Saved queries" : "Recent queries"}
+        </p>
+        <div className="flex gap-1 ml-auto">
+          {(["all", "saved"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onToggleSavedOnly(tab === "saved")}
+              className={`text-[10px] font-medium uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                (tab === "saved") === savedOnly
+                  ? "bg-teal-50 text-teal-700"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {items.length === 0 && (
+        <p className="text-sm text-gray-400 px-2">No saved queries yet.</p>
+      )}
+
       <ul className="space-y-1">
         {items.map((item) => (
-          <li key={item.id}>
+          <li key={item.id} className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onToggleSaved(item)}
+              aria-label={item.saved ? "Unsave this query" : "Save this query"}
+              title={item.saved ? "Unsave" : "Save"}
+              className={`shrink-0 text-base leading-none px-1.5 py-1.5 rounded-md hover:bg-white ${
+                item.saved ? "text-amber-500" : "text-gray-300 hover:text-gray-400"
+              }`}
+            >
+              {item.saved ? "★" : "☆"}
+            </button>
             <button
               type="button"
               onClick={() => onReuse(item.query)}
-              className="w-full flex items-center gap-3 text-left text-sm text-gray-600 hover:text-teal-700 hover:bg-white rounded-md px-2 py-1.5 transition-colors"
+              className="flex-1 min-w-0 flex items-center gap-3 text-left text-sm text-gray-600 hover:text-teal-700 hover:bg-white rounded-md px-2 py-1.5 transition-colors"
             >
               <span className="flex-1 truncate">{item.query}</span>
               {item.degraded && (
@@ -66,17 +115,28 @@ export default function Query() {
   const [response, setResponse] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [savedOnly, setSavedOnly] = useState(false);
 
   function reloadHistory() {
     // Best-effort: an unreachable history endpoint should not disturb the
     // query flow itself, so failures here are silent rather than surfaced
     // through the same `error` state as a failed query.
-    fetchHistory()
+    fetchHistory({ savedOnly })
       .then(setHistory)
       .catch(() => {});
   }
 
-  useEffect(reloadHistory, []);
+  useEffect(reloadHistory, [savedOnly]);
+
+  async function handleToggleSaved(item: HistoryItem) {
+    try {
+      await (item.saved ? unsaveQuery(item.id) : saveQuery(item.id));
+      reloadHistory();
+    } catch {
+      // Best-effort, same as reloadHistory itself -- a failed toggle just
+      // leaves the star as it was, nothing else on the page depends on it.
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -132,7 +192,13 @@ export default function Query() {
           ))}
         </div>
 
-        <HistoryPanel items={history} onReuse={setQuery} />
+        <HistoryPanel
+          items={history}
+          savedOnly={savedOnly}
+          onToggleSavedOnly={setSavedOnly}
+          onReuse={setQuery}
+          onToggleSaved={handleToggleSaved}
+        />
 
         {error && (
           <p className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
