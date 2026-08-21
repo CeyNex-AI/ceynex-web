@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 
-const PLANNED = ["Saved queries", "Notification preferences", "API keys for programmatic access"];
+const PLANNED = ["Notification preferences", "API keys for programmatic access"];
 
 export default function Account() {
   const { userId, role, logout } = useAuth();

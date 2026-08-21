@@ -23,6 +23,26 @@ const FAQS = [
     q: "Where does CeyNex's data come from?",
     a: "Sri Lanka's Export Development Board (EDB) and the Joint Apparel Association Forum (JAAF) for apparel, UN Comtrade for cross-sector trade flows, and FAOSTAT for agriculture. Each evidence entry names which one a figure came from.",
   },
+  {
+    q: "How do I sign in?",
+    a: "CeyNex uses four fixed demo accounts, one per role — policymaker@ceynex.dev, admin@ceynex.dev, researcher@ceynex.dev, exporter@ceynex.dev — all sharing the password ceynex-demo. The login page's role buttons fill in an account for you; there's no self-service sign-up.",
+  },
+  {
+    q: "What's different between the four roles?",
+    a: "Every signed-in account sees the same answers to the same questions — the roles differ only in which pages they can reach. Admin is the one role that unlocks the Admin page (see below); Policymaker, Researcher, and Exporter otherwise have identical access today.",
+  },
+  {
+    q: "What's the \"Recent queries\" list on the Query page?",
+    a: "Every question you ask while signed in is saved to your own history automatically, most recent first. Click any entry to load that question back into the search box. Nobody else can see your history — it's scoped to your account.",
+  },
+  {
+    q: "Can I save a question for later?",
+    a: "Yes — click the star (☆) next to any entry in Recent queries to bookmark it, and switch the All / Saved toggle above the list to see just your starred ones. Saving doesn't re-run the question, it just marks that entry for easy access later.",
+  },
+  {
+    q: "What can an Admin do that other roles can't?",
+    a: "The Admin page shows live system status (Postgres, Neo4j, LLM reasoning), lists registered forecast models with a one-click retrain, triggers data ingestion from EDB/JAAF or UN Comtrade, and lists data-quality flags with a resolve action. These are real actions against the live system, restricted to the Admin role on the backend, not just hidden in the menu.",
+  },
 ];
 
 export default function Help() {
