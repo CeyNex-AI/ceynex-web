@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, type Location } from "react-router-dom";
 import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
-import { DEMO_ACCOUNTS, ROLE_LABELS } from "../lib/roles";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
 
 const FEATURES = [
   {
@@ -23,7 +23,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { userId, login } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { userId, loading, login } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/query";
 
@@ -32,20 +33,34 @@ export default function Login() {
   // way userId goes truthy and this fires on the next render. Using an
   // imperative navigate() call in handleSubmit *and* this guard raced each
   // other (both try to redirect right after login()), so there's only one now.
+  // `loading` covers the gap while a stored token is still being checked
+  // against the server -- redirecting before that resolves would either bounce
+  // a valid session back to the form or flash the form before an invalid one
+  // is cleared.
+  if (loading) {
+    return null;
+  }
   if (userId) {
     return <Navigate to={from} replace />;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!email.trim() || !password) {
       setError("Enter both an email and a password.");
       return;
     }
-    // No real backend yet — see src/lib/auth.tsx. The guard above redirects
-    // to `from` once this flips userId truthy.
-    login(email.trim());
+    setSubmitting(true);
+    try {
+      // The guard above redirects to `from` once this resolves and userId
+      // flips truthy.
+      await login(email.trim(), password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -121,14 +136,15 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
+              disabled={submitting}
+              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
             >
-              Sign in
+              {submitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
           <p className="mt-4 text-center text-xs text-gray-400">
-            Demo login — no account verification yet.
+            Demo accounts, password <span className="font-mono">{DEMO_PASSWORD}</span> for all.
           </p>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
@@ -140,7 +156,11 @@ export default function Login() {
                 <button
                   key={demoEmail}
                   type="button"
-                  onClick={() => setEmail(demoEmail)}
+                  onClick={() => {
+                    setEmail(demoEmail);
+                    setPassword(DEMO_PASSWORD);
+                    setError(null);
+                  }}
                   className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
                 >
                   {ROLE_LABELS[role]}
