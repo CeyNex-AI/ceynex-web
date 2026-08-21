@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  type DQFlagItem,
+  type ModelSummary,
+  type PipelineRunItem,
+  fetchDQFlags,
+  fetchModels,
+  fetchPipelineStatus,
+  resolveDQFlag,
+  retrainModel,
+  triggerIngest,
+} from "../lib/adminApi";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 
-/**
- * There's no admin API to back user/role management, so rather than fabricate
- * one, this reuses the real GET /health endpoint (same one nginx proxies for
- * the app's own health check) to show actual system status -- real data,
- * just not the kind of "admin panel" the name usually implies.
- */
 interface HealthResponse {
   status: string;
   postgres: boolean;
@@ -34,11 +39,270 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
   );
 }
 
+function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-5">
+      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      {subtitle && <p className="text-xs text-gray-400 mt-0.5 mb-3">{subtitle}</p>}
+      {!subtitle && <div className="mt-3" />}
+      {children}
+    </div>
+  );
+}
+
+function timeAgo(iso: string): string {
+  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+/** SRS 3.1.10 -- one registered model per row, with a retrain trigger. */
+function ModelsCard() {
+  const [models, setModels] = useState<ModelSummary[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retraining, setRetraining] = useState<string | null>(null);
+
+  function reload() {
+    fetchModels()
+      .then(setModels)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load models."));
+  }
+
+  useEffect(reload, []);
+
+  async function handleRetrain(m: ModelSummary) {
+    const key = `${m.sector}/${m.item}/${m.target}`;
+    setRetraining(key);
+    setError(null);
+    try {
+      await retrainModel(m.sector, m.item, m.target);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retrain failed.");
+    } finally {
+      setRetraining(null);
+    }
+  }
+
+  return (
+    <Card title="Models" subtitle="Registered forecast models. Retrain refits the same model class on the latest data.">
+      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {!models && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {models && models.length === 0 && (
+        <p className="text-sm text-gray-400">No models registered yet.</p>
+      )}
+      {models && models.length > 0 && (
+        <ul className="space-y-2">
+          {models.map((m) => {
+            const key = `${m.sector}/${m.item}/${m.target}@${m.version}`;
+            const busy = retraining === `${m.sector}/${m.item}/${m.target}`;
+            return (
+              <li
+                key={key}
+                className="flex items-center justify-between gap-3 text-sm border border-gray-100 rounded-md px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-gray-800 truncate">
+                    {m.sector}/{m.item} <span className="text-gray-400">· {m.target}</span>
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {m.model_class} · {m.version}
+                    {m.metrics?.mape !== undefined && ` · MAPE ${(m.metrics.mape * 100).toFixed(1)}%`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => handleRetrain(m)}
+                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                >
+                  {busy ? "Retraining…" : "Retrain"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * SRS 3.1.7 trigger + SRS 3.5.4's own ingest_run status.
+ *
+ * Two buttons, not one "run everything": a real click here found that EDB and
+ * JAAF (apparel, offline cached reports) finish in well under a second, but
+ * Comtrade's public preview endpoint is rate-limited and queried one
+ * (HS code, year) request at a time -- a fresh pull took ~100s end to end.
+ * The HTTP response waits for the real work either way (see
+ * ceynex/api/routes/admin.py's docstring), so a default button that silently
+ * blocks for a minute-plus is a bad first click. EDB+JAAF is both the fast
+ * path and the one this project's apparel side actually owns; Comtrade stays
+ * one explicit click away rather than folded into "run everything".
+ */
+function PipelineCard() {
+  const [runs, setRuns] = useState<PipelineRunItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ingesting, setIngesting] = useState<string | null>(null);
+
+  function reload() {
+    fetchPipelineStatus()
+      .then(setRuns)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load pipeline status."));
+  }
+
+  useEffect(reload, []);
+
+  async function handleIngest(label: string, sources?: string[]) {
+    setIngesting(label);
+    setError(null);
+    try {
+      await triggerIngest(sources);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ingest failed.");
+    } finally {
+      setIngesting(null);
+    }
+  }
+
+  return (
+    <Card title="Data pipeline">
+      <div className="flex flex-wrap gap-2 mb-3">
+        <button
+          type="button"
+          disabled={ingesting !== null}
+          onClick={() => handleIngest("apparel", ["edb", "jaaf"])}
+          className="text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 rounded-md px-3 py-1.5"
+        >
+          {ingesting === "apparel" ? "Running…" : "Run ingest (EDB + JAAF)"}
+        </button>
+        <button
+          type="button"
+          disabled={ingesting !== null}
+          onClick={() => handleIngest("comtrade", ["comtrade"])}
+          title="Rate-limited and queried per HS code/year -- can take a minute or more"
+          className="text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-3 py-1.5"
+        >
+          {ingesting === "comtrade" ? "Running (can take a while)…" : "Run ingest (Comtrade, slow)"}
+        </button>
+      </div>
+      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {!runs && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {runs && runs.length === 0 && <p className="text-sm text-gray-400">No ingest runs yet.</p>}
+      {runs && runs.length > 0 && (
+        <ul className="space-y-1.5">
+          {runs.slice(0, 8).map((r) => (
+            <li
+              key={r.run_id}
+              className="flex items-center justify-between gap-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+            >
+              <span className="text-gray-800">{r.source_id}</span>
+              <span className="text-xs text-gray-400">{r.rows_written.toLocaleString()} rows</span>
+              <span
+                className={`text-xs font-medium ${r.status === "success" ? "text-emerald-700" : "text-red-700"}`}
+              >
+                {r.status}
+              </span>
+              <span className="text-xs text-gray-400 shrink-0">{timeAgo(r.started_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/** SRS 3.1.8's flags, reviewed here (SRS 3.5.4) rather than only ever queried. */
+function DQFlagsCard() {
+  const [flags, setFlags] = useState<DQFlagItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [resolving, setResolving] = useState<number | null>(null);
+
+  function reload() {
+    fetchDQFlags()
+      .then(setFlags)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load DQ flags."));
+  }
+
+  useEffect(reload, []);
+
+  async function handleResolve(flagId: number) {
+    setResolving(flagId);
+    setError(null);
+    try {
+      await resolveDQFlag(flagId);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resolve the flag.");
+    } finally {
+      setResolving(null);
+    }
+  }
+
+  const severityColor: Record<string, string> = {
+    minor: "text-gray-500 bg-gray-100",
+    material: "text-amber-700 bg-amber-50",
+    severe: "text-red-700 bg-red-50",
+  };
+
+  return (
+    <Card title="Data quality review" subtitle="Cross-source discrepancies, unresolved first.">
+      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {!flags && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {flags && flags.length === 0 && <p className="text-sm text-gray-400">No flags recorded.</p>}
+      {flags && flags.length > 0 && (
+        <ul className="space-y-2">
+          {flags.map((f) => (
+            <li
+              key={f.flag_id}
+              className="flex items-center justify-between gap-3 text-sm border border-gray-100 rounded-md px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-gray-800 truncate">
+                  {f.item ?? "—"}{" "}
+                  {f.severity && (
+                    <span
+                      className={`text-[10px] font-medium rounded px-1.5 py-0.5 ml-1 ${severityColor[f.severity] ?? "text-gray-500 bg-gray-100"}`}
+                    >
+                      {f.severity}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {f.source_a} {f.value_a ?? "?"} vs {f.source_b} {f.value_b ?? "?"}
+                  {f.pct_diff !== null && ` (${f.pct_diff.toFixed(1)}% diff)`}
+                </p>
+              </div>
+              {f.resolved ? (
+                <span className="shrink-0 text-xs text-gray-400">resolved</span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={resolving === f.flag_id}
+                  onClick={() => handleResolve(f.flag_id)}
+                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                >
+                  {resolving === f.flag_id ? "Resolving…" : "Resolve"}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 export default function Admin() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -48,7 +312,7 @@ export default function Admin() {
         return res.json();
       })
       .then(setHealth)
-      .catch(() => setError("Couldn't reach the health endpoint."));
+      .catch(() => setHealthError("Couldn't reach the health endpoint."));
   }, [isAdmin]);
 
   if (!isAdmin) {
@@ -78,24 +342,22 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
-      <div className="max-w-sm mx-auto">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
-        <p className="text-sm text-gray-500 mb-6">
-          No admin API exists yet — this is a real system status view instead.
-        </p>
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
+          <p className="text-sm text-gray-500">
+            Retrain, ingest and data-quality review — real actions against the live system (SRS 3.5.4).
+          </p>
+        </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
-          {error && <p className="text-sm text-gray-500">{error}</p>}
-          {!error && !health && <p className="text-sm text-gray-400">Checking system status…</p>}
+        <Card title="System status">
+          {healthError && <p className="text-sm text-gray-500">{healthError}</p>}
+          {!healthError && !health && <p className="text-sm text-gray-400">Checking system status…</p>}
           {health && (
             <>
               <StatusRow label="Postgres" up={health.postgres} />
               <StatusRow label="Neo4j" up={health.neo4j} />
-              <StatusRow
-                label="LLM reasoning"
-                up={health.llm}
-                note={health.llm ? "up" : "degraded"}
-              />
+              <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
               {health.detail?.fact_trade_rows !== undefined && (
                 <div className="pt-3 mt-1 text-xs text-gray-400">
                   {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
@@ -106,7 +368,11 @@ export default function Admin() {
               )}
             </>
           )}
-        </div>
+        </Card>
+
+        <ModelsCard />
+        <PipelineCard />
+        <DQFlagsCard />
       </div>
     </div>
   );
