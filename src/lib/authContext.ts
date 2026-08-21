@@ -4,7 +4,9 @@ import type { Role } from "./roles";
 export interface AuthContextValue {
   userId: string | null;
   role: Role | null;
-  login: (email: string) => void;
+  /** True until a stored token has been checked against the server on load. */
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
