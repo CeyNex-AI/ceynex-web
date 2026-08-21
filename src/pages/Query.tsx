@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
+import { fetchHistory, type HistoryItem } from "../lib/historyApi";
 import { runQuery } from "../lib/queryApi";
 import type { QueryResponse } from "../types/contracts";
 
@@ -19,11 +20,63 @@ const DATA_SOURCES = [
   { id: "FAOSTAT", name: "FAO agriculture statistics" },
 ];
 
+function timeAgo(iso: string): string {
+  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+/** SRS 3.5.2 -- a signed-in user's own past queries, clickable to reuse. */
+function HistoryPanel({ items, onReuse }: { items: HistoryItem[]; onReuse: (query: string) => void }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Recent queries</p>
+      <ul className="space-y-1">
+        {items.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              onClick={() => onReuse(item.query)}
+              className="w-full flex items-center gap-3 text-left text-sm text-gray-600 hover:text-teal-700 hover:bg-white rounded-md px-2 py-1.5 transition-colors"
+            >
+              <span className="flex-1 truncate">{item.query}</span>
+              {item.degraded && (
+                <span className="text-[10px] text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 shrink-0">
+                  degraded
+                </span>
+              )}
+              <span className="text-xs text-gray-400 shrink-0">{timeAgo(item.asked_at)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Query() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  function reloadHistory() {
+    // Best-effort: an unreachable history endpoint should not disturb the
+    // query flow itself, so failures here are silent rather than surfaced
+    // through the same `error` state as a failed query.
+    fetchHistory()
+      .then(setHistory)
+      .catch(() => {});
+  }
+
+  useEffect(reloadHistory, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,6 +86,7 @@ export default function Query() {
     try {
       const result = await runQuery(query.trim());
       setResponse(result);
+      reloadHistory();
     } catch {
       setError("Couldn't reach the query service. Try again in a moment.");
     } finally {
@@ -77,6 +131,8 @@ export default function Query() {
             </button>
           ))}
         </div>
+
+        <HistoryPanel items={history} onReuse={setQuery} />
 
         {error && (
           <p className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">

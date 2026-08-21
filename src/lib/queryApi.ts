@@ -1,4 +1,5 @@
 import type { Evidence, ForecastPoint, QueryResponse } from "../types/contracts";
+import { getToken } from "./tokenStorage";
 
 /**
  * Real POST /api/query, proxied same-origin by nginx on the frontend VM
@@ -12,6 +13,11 @@ import type { Evidence, ForecastPoint, QueryResponse } from "../types/contracts"
  * response model diverged. Mapped here so QueryResponse and every component
  * that already consumes it (Query.tsx, EvidencePanel, ForecastChart) stay
  * unchanged.
+ *
+ * The token, when present, is sent along so the backend can attribute the
+ * query to a user for history (SRS 3.5.2) -- the endpoint itself stays open
+ * either way (ceynex/api/routes/query.py's `get_optional_user`), so a missing
+ * or stale token never breaks the query, it just isn't remembered.
  */
 interface ApiQueryResponse {
   answer: string;
@@ -24,9 +30,13 @@ interface ApiQueryResponse {
 }
 
 export async function runQuery(query: string): Promise<QueryResponse> {
+  const token = getToken();
   const res = await fetch("/api/query", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ query }),
   });
 

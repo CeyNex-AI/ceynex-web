@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AuthContext } from "./authContext";
 import { fetchMe, loginApi } from "./authApi";
 import type { Role } from "./roles";
+import { clearToken, getToken, setToken } from "./tokenStorage";
 
 /**
  * Real auth now: `login()` posts to ceynex-core's POST /api/auth/login and
@@ -12,18 +13,16 @@ import type { Role } from "./roles";
  * no longer matches what the API will actually accept.
  */
 
-const TOKEN_KEY = "ceynex_token";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   // Starts true only when there's a token to verify -- otherwise there's
   // nothing to wait on, and starting true would need a synchronous setState
   // in the effect below just to flip it back off.
-  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
+  const [loading, setLoading] = useState(() => Boolean(getToken()));
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = getToken();
     if (!token) return;
     let cancelled = false;
     fetchMe(token)
@@ -33,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(user.role as Role);
       })
       .catch(() => {
-        if (!cancelled) localStorage.removeItem(TOKEN_KEY);
+        if (!cancelled) clearToken();
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -45,13 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string) {
     const result = await loginApi(email, password);
-    localStorage.setItem(TOKEN_KEY, result.token);
+    setToken(result.token);
     setUserId(result.email);
     setRole(result.role as Role);
   }
 
   function logout() {
-    localStorage.removeItem(TOKEN_KEY);
+    clearToken();
     setUserId(null);
     setRole(null);
   }
