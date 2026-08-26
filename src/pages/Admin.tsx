@@ -199,16 +199,22 @@ function PipelineCard() {
           {runs.slice(0, 8).map((r) => (
             <li
               key={r.run_id}
-              className="flex items-center justify-between gap-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+              // Grid, not flex justify-between: a flex row spaces its items
+              // based on that row's own content width, so with values as
+              // different as "658 rows" vs "6,218 rows" the rows/status/time
+              // columns drift out of alignment from one row to the next.
+              // Grid sizes each column once, from the widest cell in that
+              // column across every row, so they always line up.
+              className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
             >
-              <span className="text-gray-800">{r.source_id}</span>
-              <span className="text-xs text-gray-400">{r.rows_written.toLocaleString()} rows</span>
+              <span className="text-gray-800 truncate">{r.source_id}</span>
+              <span className="text-xs text-gray-400 text-right">{r.rows_written.toLocaleString()} rows</span>
               <span
-                className={`text-xs font-medium ${r.status === "success" ? "text-emerald-700" : "text-red-700"}`}
+                className={`text-xs font-medium text-right ${r.status === "success" ? "text-emerald-700" : "text-red-700"}`}
               >
                 {r.status}
               </span>
-              <span className="text-xs text-gray-400 shrink-0">{timeAgo(r.started_at)}</span>
+              <span className="text-xs text-gray-400 text-right">{timeAgo(r.started_at)}</span>
             </li>
           ))}
         </ul>
