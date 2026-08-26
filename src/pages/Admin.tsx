@@ -13,6 +13,7 @@ import {
 } from "../lib/adminApi";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
+import usePageTitle from "../lib/usePageTitle";
 
 interface HealthResponse {
   status: string;
@@ -90,7 +91,11 @@ function ModelsCard() {
 
   return (
     <Card title="Models" subtitle="Registered forecast models. Retrain refits the same model class on the latest data.">
-      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
       {!models && !error && <p className="text-sm text-gray-400">Loading…</p>}
       {models && models.length === 0 && (
         <p className="text-sm text-gray-400">No models registered yet.</p>
@@ -191,7 +196,11 @@ function PipelineCard() {
           {ingesting === "comtrade" ? "Running (can take a while)…" : "Run ingest (Comtrade, slow)"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
       {!runs && !error && <p className="text-sm text-gray-400">Loading…</p>}
       {runs && runs.length === 0 && <p className="text-sm text-gray-400">No ingest runs yet.</p>}
       {runs && runs.length > 0 && (
@@ -258,7 +267,11 @@ function DQFlagsCard() {
 
   return (
     <Card title="Data quality review" subtitle="Cross-source discrepancies, unresolved first.">
-      {error && <p className="text-sm text-red-700 mb-2">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
       {!flags && !error && <p className="text-sm text-gray-400">Loading…</p>}
       {flags && flags.length === 0 && <p className="text-sm text-gray-400">No flags recorded.</p>}
       {flags && flags.length > 0 && (
@@ -305,6 +318,7 @@ function DQFlagsCard() {
 }
 
 export default function Admin() {
+  usePageTitle("Admin");
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -338,7 +352,7 @@ export default function Admin() {
               to="/query"
               className="inline-block mt-4 text-sm text-teal-700 hover:text-teal-800 font-medium"
             >
-              Back to Query →
+              Back to Query <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
@@ -357,7 +371,11 @@ export default function Admin() {
         </div>
 
         <Card title="System status">
-          {healthError && <p className="text-sm text-gray-500">{healthError}</p>}
+          {healthError && (
+            <p role="alert" className="text-sm text-gray-500">
+              {healthError}
+            </p>
+          )}
           {!healthError && !health && <p className="text-sm text-gray-400">Checking system status…</p>}
           {health && (
             <>

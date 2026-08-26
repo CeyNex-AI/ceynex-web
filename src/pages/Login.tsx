@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, type Location } from "react-router-dom";
 import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
+import usePageTitle from "../lib/usePageTitle";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
 
 const FEATURES = [
@@ -20,6 +21,7 @@ const FEATURES = [
 ];
 
 export default function Login() {
+  usePageTitle("Sign in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +134,11 @@ export default function Login() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
