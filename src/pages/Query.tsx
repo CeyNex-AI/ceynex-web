@@ -63,6 +63,20 @@ function HistoryPanel({
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
           {savedOnly ? "Saved queries" : "Recent queries"}
         </p>
+        {items.length > COLLAPSED_HISTORY_COUNT && (
+          // Same toggle also sits below the list (next to the <ul>). A long
+          // expanded list otherwise only offers "Show fewer" at the very
+          // bottom -- collapsing it back means scrolling all the way down
+          // first, which gets worse the longer the list is.
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            aria-expanded={expanded}
+            className="text-xs font-medium text-gray-400 hover:text-teal-700"
+          >
+            {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
+          </button>
+        )}
         <div className="flex gap-1 ml-auto">
           {(["all", "saved"] as const).map((tab) => (
             <button
