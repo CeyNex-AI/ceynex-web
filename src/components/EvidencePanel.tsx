@@ -38,6 +38,7 @@ function EvidenceItem({ item }: { item: Evidence }) {
       <button
         type="button"
         onClick={() => setShowDetail((s) => !s)}
+        aria-expanded={showDetail}
         className="mt-1.5 text-xs text-teal-600 hover:text-teal-800 underline underline-offset-2"
       >
         {showDetail ? "Hide query" : "Show query"}
