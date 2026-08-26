@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
+import usePageTitle from "../lib/usePageTitle";
 
 export default function NotFound() {
+  usePageTitle("Page not found");
   const { userId } = useAuth();
 
   return (
@@ -16,7 +18,7 @@ export default function NotFound() {
             to={userId ? "/query" : "/"}
             className="inline-block mt-4 text-sm text-teal-700 hover:text-teal-800 font-medium"
           >
-            {userId ? "Back to Query" : "Back to Login"} →
+            {userId ? "Back to Query" : "Back to Login"} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>

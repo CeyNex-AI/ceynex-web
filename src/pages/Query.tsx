@@ -3,6 +3,7 @@ import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
 import { fetchHistory, saveQuery, unsaveQuery, type HistoryItem } from "../lib/historyApi";
+import usePageTitle from "../lib/usePageTitle";
 import { runQuery } from "../lib/queryApi";
 import type { QueryResponse } from "../types/contracts";
 
@@ -131,6 +132,7 @@ function HistoryPanel({
 }
 
 export default function Query() {
+  usePageTitle("Ask CeyNex");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<QueryResponse | null>(null);
@@ -226,7 +228,7 @@ export default function Query() {
         />
 
         {error && (
-          <p className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+          <p role="alert" className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
             {error}
           </p>
         )}

@@ -39,40 +39,68 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
         <h2 className="text-sm font-semibold text-gray-900">Forecast</h2>
         <span className="text-xs text-gray-400">shaded band = uncertainty interval</span>
       </div>
-      <ResponsiveContainer width="100%" height={240}>
-        <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-          <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-          <YAxis tickFormatter={formatValue} tick={{ fontSize: 12 }} width={70} />
-          <Tooltip content={<ForecastTooltip formatValue={formatValue} />} />
-          <Area
-            type="monotone"
-            dataKey="lowerBase"
-            stackId="band"
-            stroke="none"
-            fill="transparent"
-            isAnimationActive={false}
-          />
-          <Area
-            type="monotone"
-            dataKey="bandRange"
-            stackId="band"
-            stroke="none"
-            fill="#0d9488"
-            fillOpacity={0.15}
-            isAnimationActive={false}
-            name="Confidence interval"
-          />
-          <Line
-            type="monotone"
-            dataKey="point"
-            stroke="#0d9488"
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            name="Forecast"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+      {/* The chart is an SVG rendered by Recharts with no text equivalent of
+       * its own -- a screen reader gets nothing from it. aria-hidden pulls it
+       * out of the accessibility tree entirely; the sr-only table below is
+       * the real, complete text equivalent (every period/lower/upper, not
+       * just a compressed summary), so nothing is actually lost. */}
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={240}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={formatValue} tick={{ fontSize: 12 }} width={70} />
+            <Tooltip content={<ForecastTooltip formatValue={formatValue} />} />
+            <Area
+              type="monotone"
+              dataKey="lowerBase"
+              stackId="band"
+              stroke="none"
+              fill="transparent"
+              isAnimationActive={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="bandRange"
+              stackId="band"
+              stroke="none"
+              fill="#0d9488"
+              fillOpacity={0.15}
+              isAnimationActive={false}
+              name="Confidence interval"
+            />
+            <Line
+              type="monotone"
+              dataKey="point"
+              stroke="#0d9488"
+              strokeWidth={2}
+              dot={{ r: 4 }}
+              name="Forecast"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <table className="sr-only">
+        <caption>Forecast by period, with an 80% confidence interval</caption>
+        <thead>
+          <tr>
+            <th scope="col">Period</th>
+            <th scope="col">Forecast</th>
+            <th scope="col">Lower bound</th>
+            <th scope="col">Upper bound</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.period}>
+              <th scope="row">{d.period}</th>
+              <td>{formatValue(d.point)}</td>
+              <td>{formatValue(d.lower)}</td>
+              <td>{formatValue(d.upper)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import usePageTitle from "../lib/usePageTitle";
+
 const FAQS = [
   {
     q: "What can I ask CeyNex?",
@@ -46,6 +48,7 @@ const FAQS = [
 ];
 
 export default function Help() {
+  usePageTitle("Help & FAQ");
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
@@ -54,14 +57,18 @@ export default function Help() {
           A quick guide to how CeyNex answers questions.
         </p>
 
-        <div className="space-y-3">
+        {/* A question-and-answer list is exactly what <dl>/<dt>/<dd> are for --
+         * real semantics instead of <div>s styled to look like one, so a
+         * screen reader can navigate the FAQ by term rather than reading an
+         * undifferentiated stream of paragraphs. */}
+        <dl className="space-y-3">
           {FAQS.map(({ q, a }) => (
             <div key={q} className="bg-white border border-gray-200 rounded-lg p-5">
-              <div className="text-sm font-medium text-gray-900 mb-1.5">{q}</div>
-              <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+              <dt className="text-sm font-medium text-gray-900 mb-1.5">{q}</dt>
+              <dd className="text-sm text-gray-600 leading-relaxed">{a}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </div>
   );
