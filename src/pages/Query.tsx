@@ -103,15 +103,27 @@ function HistoryPanel({
             <button
               type="button"
               onClick={() => onReuse(item.query)}
-              className="flex-1 min-w-0 flex items-center gap-3 text-left text-sm text-gray-600 hover:text-teal-700 hover:bg-white rounded-md px-2 py-1.5 transition-colors"
+              // Grid, not flex: the query-text span was flex-1 + truncate
+              // with no min-w-0 on itself, so its minimum width defaulted to
+              // its full un-truncated content size (the flexbox truncation
+              // footgun) -- truncate never actually engaged, and the
+              // badge/time after it landed at a different x position on
+              // every row depending on how long that row's query happened to
+              // be. Grid columns are sized once across every row, and the
+              // "degraded" badge is always rendered (just invisible when not
+              // degraded) so a row without it doesn't shift the time column
+              // into the wrong slot.
+              className="flex-1 min-w-0 grid grid-cols-[1fr_auto_auto] items-center gap-3 text-left text-sm text-gray-600 hover:text-teal-700 hover:bg-white rounded-md px-2 py-1.5 transition-colors"
             >
-              <span className="flex-1 truncate">{item.query}</span>
-              {item.degraded && (
-                <span className="text-[10px] text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 shrink-0">
-                  degraded
-                </span>
-              )}
-              <span className="text-xs text-gray-400 shrink-0">{timeAgo(item.asked_at)}</span>
+              <span className="min-w-0 truncate">{item.query}</span>
+              <span
+                className={`text-[10px] font-medium rounded px-1.5 py-0.5 ${
+                  item.degraded ? "text-amber-600 bg-amber-50" : "invisible"
+                }`}
+              >
+                degraded
+              </span>
+              <span className="text-xs text-gray-400">{timeAgo(item.asked_at)}</span>
             </button>
           </li>
         ))}
