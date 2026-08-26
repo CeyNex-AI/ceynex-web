@@ -35,7 +35,7 @@ export default function Account() {
           )}
 
           <p className="text-xs text-gray-400">
-            Demo login — no account verification, profile, or preferences yet.
+            Demo login: no account verification, profile, or preferences yet.
           </p>
 
           <button

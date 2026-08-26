@@ -1,7 +1,7 @@
 const FAQS = [
   {
     q: "What can I ask CeyNex?",
-    a: "Questions about Sri Lanka's export performance in tea, cinnamon, and apparel — markets, trends, concentration, and short-term forecasts. Try one of the example queries on the Query page to get started.",
+    a: "Questions about Sri Lanka's export performance in tea, cinnamon, and apparel: markets, trends, concentration, and short-term forecasts. Try one of the example queries on the Query page to get started.",
   },
   {
     q: "What's the evidence panel next to each answer?",
@@ -9,7 +9,7 @@ const FAQS = [
   },
   {
     q: "What does the confidence badge mean?",
-    a: "A score from 0 to 1 summarizing how much the answer can be trusted, based on source coverage, data freshness, and how directly the question was answered — never a fixed or hardcoded number.",
+    a: "A score from 0 to 1 summarizing how much the answer can be trusted, based on source coverage, data freshness, and how directly the question was answered; never a fixed or hardcoded number.",
   },
   {
     q: "Why does an answer say it's \"degraded\"?",
@@ -25,19 +25,19 @@ const FAQS = [
   },
   {
     q: "How do I sign in?",
-    a: "CeyNex uses four fixed demo accounts, one per role — policymaker@ceynex.dev, admin@ceynex.dev, researcher@ceynex.dev, exporter@ceynex.dev — all sharing the password ceynex-demo. The login page's role buttons fill in an account for you; there's no self-service sign-up.",
+    a: "CeyNex uses four fixed demo accounts, one per role (policymaker@ceynex.dev, admin@ceynex.dev, researcher@ceynex.dev, exporter@ceynex.dev), all sharing the password ceynex-demo. The login page's role buttons fill in an account for you; there's no self-service sign-up.",
   },
   {
     q: "What's different between the four roles?",
-    a: "Every signed-in account sees the same answers to the same questions — the roles differ only in which pages they can reach. Admin is the one role that unlocks the Admin page (see below); Policymaker, Researcher, and Exporter otherwise have identical access today.",
+    a: "Every signed-in account sees the same answers to the same questions; the roles differ only in which pages they can reach. Admin is the one role that unlocks the Admin page (see below); Policymaker, Researcher, and Exporter otherwise have identical access today.",
   },
   {
     q: "What's the \"Recent queries\" list on the Query page?",
-    a: "Every question you ask while signed in is saved to your own history automatically, most recent first. Click any entry to load that question back into the search box. Nobody else can see your history — it's scoped to your account.",
+    a: "Every question you ask while signed in is saved to your own history automatically, most recent first. Click any entry to load that question back into the search box. Nobody else can see your history; it's scoped to your account.",
   },
   {
     q: "Can I save a question for later?",
-    a: "Yes — click the star (☆) next to any entry in Recent queries to bookmark it, and switch the All / Saved toggle above the list to see just your starred ones. Saving doesn't re-run the question, it just marks that entry for easy access later.",
+    a: "Yes. Click the star (☆) next to any entry in Recent queries to bookmark it, and switch the All / Saved toggle above the list to see just your starred ones. Saving doesn't re-run the question, it just marks that entry for easy access later.",
   },
   {
     q: "What can an Admin do that other roles can't?",

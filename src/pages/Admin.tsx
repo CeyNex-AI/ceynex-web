@@ -264,7 +264,7 @@ function DQFlagsCard() {
             >
               <div className="min-w-0">
                 <p className="text-gray-800 truncate">
-                  {f.item ?? "—"}{" "}
+                  {f.item ?? "N/A"}{" "}
                   {f.severity && (
                     <span
                       className={`text-[10px] font-medium rounded px-1.5 py-0.5 ml-1 ${severityColor[f.severity] ?? "text-gray-500 bg-gray-100"}`}
@@ -346,7 +346,7 @@ export default function Admin() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
           <p className="text-sm text-gray-500">
-            Retrain, ingest and data-quality review — real actions against the live system (SRS 3.5.4).
+            Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
           </p>
         </div>
 

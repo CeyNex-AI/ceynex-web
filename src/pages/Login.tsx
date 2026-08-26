@@ -7,7 +7,7 @@ import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
 const FEATURES = [
   {
     title: "Ask in plain language",
-    detail: "Questions about tea, cinnamon, and apparel export performance — no query syntax to learn.",
+    detail: "Questions about tea, cinnamon, and apparel export performance. No query syntax to learn.",
   },
   {
     title: "See the evidence, not just the answer",
