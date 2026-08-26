@@ -29,7 +29,7 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0">
       <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${up ? "bg-emerald-500" : "bg-red-500"}`} />
+        <span aria-hidden="true" className={`w-2 h-2 rounded-full ${up ? "bg-emerald-500" : "bg-red-500"}`} />
         <span className="text-sm text-gray-800">{label}</span>
       </div>
       <span className={`text-xs font-medium ${up ? "text-emerald-700" : "text-red-700"}`}>

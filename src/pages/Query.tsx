@@ -57,7 +57,7 @@ function HistoryPanel({
   const hiddenCount = items.length - visibleItems.length;
 
   return (
-    <div className="mb-8">
+    <div className="print:hidden mb-8">
       <div className="flex items-center gap-3 mb-2">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
           {savedOnly ? "Saved queries" : "Recent queries"}
@@ -68,6 +68,7 @@ function HistoryPanel({
               key={tab}
               type="button"
               onClick={() => onToggleSavedOnly(tab === "saved")}
+              aria-pressed={(tab === "saved") === savedOnly}
               className={`text-[10px] font-medium uppercase tracking-wide rounded-full px-2 py-0.5 ${
                 (tab === "saved") === savedOnly
                   ? "bg-teal-50 text-teal-700"
@@ -119,6 +120,7 @@ function HistoryPanel({
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
+          aria-expanded={expanded}
           className="mt-1 text-xs font-medium text-gray-400 hover:text-teal-700 px-2 py-1"
         >
           {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
@@ -181,7 +183,7 @@ export default function Query() {
           Ask about Sri Lanka's tea, cinnamon, and apparel export performance.
         </p>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 mb-3">
+        <form onSubmit={handleSubmit} className="print:hidden flex gap-2 mb-3">
           <input
             type="text"
             value={query}
@@ -198,7 +200,7 @@ export default function Query() {
           </button>
         </form>
 
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="print:hidden flex flex-wrap gap-2 mb-8">
           {EXAMPLE_QUERIES.map((example) => (
             <button
               key={example}
@@ -232,12 +234,24 @@ export default function Query() {
         {response && (
           // SRS 3.1.4: evidence sits beside the answer — a two-column flex
           // layout, not a modal/overlay triggered by a "view evidence" button.
-          <div className="flex flex-col lg:flex-row gap-6">
+          // print:flex-col: on paper the two columns would squeeze evidence
+          // into a sliver, so the report stacks evidence below the answer
+          // instead.
+          <div className="flex flex-col lg:flex-row print:flex-col gap-6">
             <div className="flex-1 min-w-0 space-y-4">
               <div className="bg-white border border-gray-200 rounded-lg p-5">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <p className="text-sm text-gray-500 italic">"{response.query}"</p>
-                  <ConfidenceBadge score={response.final_confidence} />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ConfidenceBadge score={response.final_confidence} />
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="print:hidden text-xs font-medium text-gray-500 hover:text-teal-700 border border-gray-200 rounded-md px-2.5 py-1"
+                    >
+                      Print report
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-800 leading-relaxed">{response.final_answer}</p>
                 {response.degraded && (
