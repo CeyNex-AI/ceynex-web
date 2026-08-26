@@ -30,8 +30,12 @@ function timeAgo(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+const COLLAPSED_HISTORY_COUNT = 3;
+
 /** SRS 3.5.2 -- a signed-in user's own past queries, clickable to reuse, and
- * bookmarkable for later (the star), filterable to just the starred ones. */
+ * bookmarkable for later (the star), filterable to just the starred ones.
+ * Collapsed to the most recent few by default so a long history doesn't pile
+ * up the page -- "Show more" reveals the rest. */
 function HistoryPanel({
   items,
   savedOnly,
@@ -45,7 +49,12 @@ function HistoryPanel({
   onReuse: (query: string) => void;
   onToggleSaved: (item: HistoryItem) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (items.length === 0 && !savedOnly) return null;
+
+  const visibleItems = expanded ? items : items.slice(0, COLLAPSED_HISTORY_COUNT);
+  const hiddenCount = items.length - visibleItems.length;
 
   return (
     <div className="mb-8">
@@ -76,7 +85,7 @@ function HistoryPanel({
       )}
 
       <ul className="space-y-1">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <li key={item.id} className="flex items-center gap-1">
             <button
               type="button"
@@ -105,6 +114,16 @@ function HistoryPanel({
           </li>
         ))}
       </ul>
+
+      {items.length > COLLAPSED_HISTORY_COUNT && (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-1 text-xs font-medium text-gray-400 hover:text-teal-700 px-2 py-1"
+        >
+          {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
+        </button>
+      )}
     </div>
   );
 }
@@ -193,6 +212,10 @@ export default function Query() {
         </div>
 
         <HistoryPanel
+          // Keyed by tab so switching All/Saved remounts the panel and its
+          // local "expanded" state resets, instead of carrying an expanded
+          // view over from the other tab.
+          key={savedOnly ? "saved" : "all"}
           items={history}
           savedOnly={savedOnly}
           onToggleSavedOnly={setSavedOnly}
@@ -219,7 +242,7 @@ export default function Query() {
                 <p className="text-gray-800 leading-relaxed">{response.final_answer}</p>
                 {response.degraded && (
                   <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 inline-block">
-                    Showing figures and evidence only — natural-language explanation unavailable.
+                    Showing figures and evidence only. A natural-language explanation isn't available.
                   </p>
                 )}
               </div>
@@ -239,7 +262,7 @@ export default function Query() {
             {DATA_SOURCES.map((source) => (
               <span key={source.id} className="text-xs text-gray-500">
                 <span className="font-mono font-medium text-gray-600">{source.id}</span>
-                {" — "}
+                {": "}
                 {source.name}
               </span>
             ))}

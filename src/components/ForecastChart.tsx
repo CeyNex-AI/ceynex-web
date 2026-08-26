@@ -105,7 +105,7 @@ function ForecastTooltip({
       <p className="text-teal-700">Forecast: {formatValue(point)}</p>
       {lower !== undefined && upper !== undefined && (
         <p className="text-gray-500">
-          Range: {formatValue(lower)} – {formatValue(upper)}
+          Range: {formatValue(lower)} to {formatValue(upper)}
         </p>
       )}
     </div>
