@@ -58,6 +58,18 @@ export interface DQFlagItem {
   resolved: boolean;
 }
 
+export interface ProviderStatusItem {
+  configured: boolean;
+  status: "not_configured" | "cap_reached" | "unknown" | "ok" | "down";
+  last_error: string | null;
+  last_checked_at: string | null;
+}
+
+export interface LLMStatus {
+  openai: ProviderStatusItem;
+  openrouter: ProviderStatusItem;
+}
+
 function authHeaders(): HeadersInit {
   const token = getToken();
   if (!token) throw new Error("Not signed in.");
@@ -115,4 +127,9 @@ export async function resolveDQFlag(flagId: number): Promise<void> {
     headers: authHeaders(),
   });
   await unwrap<{ flag_id: number; resolved: boolean }>(res, "Resolving flag");
+}
+
+export async function fetchLLMStatus(): Promise<LLMStatus> {
+  const res = await fetch("/api/admin/llm/status", { headers: authHeaders() });
+  return unwrap<LLMStatus>(res, "Loading LLM status");
 }
