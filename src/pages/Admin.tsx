@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   type DQFlagItem,
+  type LLMStatus,
   type ModelSummary,
   type PipelineRunItem,
+  type ProviderStatusItem,
   fetchDQFlags,
+  fetchLLMStatus,
   fetchModels,
   fetchPipelineStatus,
   resolveDQFlag,
@@ -59,6 +62,83 @@ function timeAgo(iso: string): string {
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.round(hours / 24)}d ago`;
+}
+
+const PROVIDER_STATUS_STYLE: Record<
+  ProviderStatusItem["status"],
+  { dot: string; text: string; label: string }
+> = {
+  ok: { dot: "bg-emerald-500", text: "text-emerald-700", label: "up" },
+  down: { dot: "bg-red-500", text: "text-red-700", label: "down" },
+  // Amber, not red: calls are deliberately being skipped to protect the
+  // daily spend cap (R5) -- this is not GPT-4o itself failing.
+  cap_reached: { dot: "bg-amber-500", text: "text-amber-700", label: "spend cap reached" },
+  not_configured: { dot: "bg-gray-300", text: "text-gray-400", label: "not configured" },
+  unknown: { dot: "bg-gray-300", text: "text-gray-400", label: "not checked yet" },
+};
+
+/** One provider's row in the LLM status card -- richer than StatusRow's
+ * plain up/down, since "not configured"/"spend cap reached"/"not checked
+ * yet" all need to read differently from a real outage. */
+function ProviderStatusRow({ label, item }: { label: string; item: ProviderStatusItem }) {
+  const style = PROVIDER_STATUS_STYLE[item.status] ?? PROVIDER_STATUS_STYLE.unknown;
+  return (
+    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-gray-100 last:border-0">
+      <div className="flex items-center gap-2 pt-0.5">
+        <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+        <span className="text-sm text-gray-800">{label}</span>
+      </div>
+      <div className="text-right min-w-0">
+        <span className={`text-xs font-medium ${style.text}`}>{style.label}</span>
+        {item.status === "down" && item.last_error && (
+          <p className="text-[11px] text-gray-400 mt-0.5 truncate max-w-[220px]" title={item.last_error}>
+            {item.last_error}
+          </p>
+        )}
+        {item.last_checked_at && (item.status === "ok" || item.status === "down") && (
+          <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(item.last_checked_at)}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * User request: an admin should be able to see at a glance whether GPT-4o
+ * (OpenAI, primary) needs fixing while OpenRouter's free failsafe covers the
+ * gap in the meantime -- rather than only the single coarse "LLM
+ * reasoning: up/degraded" row the System status card above already shows.
+ *
+ * Based on the outcome of the most recent real query to each provider, not
+ * a live ping -- free, at the cost of only being as fresh as the last actual
+ * query (see ceynex-core's LLMReasoningClient.provider_status() docstring).
+ */
+function LLMStatusCard() {
+  const [status, setStatus] = useState<LLMStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchLLMStatus()
+      .then(setStatus)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load LLM status."));
+  }, []);
+
+  return (
+    <Card title="LLM providers" subtitle="From the most recent real query to each, not a live check.">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+      {!status && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {status && (
+        <>
+          <ProviderStatusRow label="OpenAI (GPT-4o)" item={status.openai} />
+          <ProviderStatusRow label="OpenRouter (failsafe)" item={status.openrouter} />
+        </>
+      )}
+    </Card>
+  );
 }
 
 /** SRS 3.1.10 -- one registered model per row, with a retrain trigger. */
@@ -394,6 +474,7 @@ export default function Admin() {
           )}
         </Card>
 
+        <LLMStatusCard />
         <ModelsCard />
         <PipelineCard />
         <DQFlagsCard />
