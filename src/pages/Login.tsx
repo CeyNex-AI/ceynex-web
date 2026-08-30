@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, type Location } from "react-router-dom";
-import Logo from "../components/Logo";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
@@ -69,10 +68,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-4xl grid lg:grid-cols-2 gap-12 items-center">
         <div className="hidden lg:block">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <Logo className="w-8 h-8" />
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">CeyNex</h1>
-          </div>
+          <h1 className="mb-4">
+            <img
+              src="/ceynex-logo.png"
+              alt="CeyNex — Multi-Agent Decision Intelligence Platform for Sri Lanka's National Export Economy"
+              className="w-56 h-auto"
+            />
+          </h1>
           <p className="text-sm text-gray-500 mb-8 max-w-sm">
             Multi-agent trade intelligence for Sri Lanka's export economy
           </p>
@@ -91,10 +93,13 @@ export default function Login() {
 
         <div className="w-full max-w-sm mx-auto lg:mx-0">
           <div className="text-center lg:hidden mb-8">
-            <div className="inline-flex items-center gap-2 mb-2">
-              <Logo className="w-8 h-8" />
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">CeyNex</h1>
-            </div>
+            <h1 className="mb-2">
+              <img
+                src="/ceynex-logo.png"
+                alt="CeyNex — Multi-Agent Decision Intelligence Platform for Sri Lanka's National Export Economy"
+                className="w-44 h-auto mx-auto"
+              />
+            </h1>
             <p className="text-sm text-gray-500">
               Multi-agent trade intelligence for Sri Lanka's export economy
             </p>
