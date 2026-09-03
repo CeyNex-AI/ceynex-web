@@ -15,6 +15,7 @@ import {
   triggerIngest,
 } from "../lib/adminApi";
 import { ROLE_LABELS } from "../lib/roles";
+import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 
@@ -52,16 +53,6 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
       {children}
     </div>
   );
-}
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
 }
 
 const PROVIDER_STATUS_STYLE: Record<
