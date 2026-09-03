@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
+import KnowledgeGraphPanel from "../components/KnowledgeGraphPanel";
 import NewsPanel from "../components/NewsPanel";
 import TrendingNews from "../components/TrendingNews";
 import { fetchHistory, saveQuery, unsaveQuery, type HistoryItem } from "../lib/historyApi";
@@ -160,6 +161,13 @@ export default function Query() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<QueryResponse | null>(null);
+  // Increments on every answer, and is the KnowledgeGraphPanel's key -- that
+  // panel holds per-question state (expanded nodes, selection, camera) plus a
+  // cytoscape instance, and remounting is how all of it resets at once. A key
+  // derived from the question text would not change when the same question is
+  // asked twice, which is exactly when a stale expansion would be most
+  // confusing.
+  const [answerId, setAnswerId] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [savedOnly, setSavedOnly] = useState(false);
@@ -229,6 +237,7 @@ export default function Query() {
     try {
       const result = await runQuery(asked);
       setResponse(result);
+      setAnswerId((n) => n + 1);
       reloadHistory();
     } catch {
       setError("Couldn't reach the query service. Try again in a moment.");
@@ -333,6 +342,16 @@ export default function Query() {
                   </p>
                 )}
               </div>
+
+              {/* Full width under the answer rather than in the evidence
+                  column: at lg:w-80 a node-link diagram has room for about
+                  three nodes. Above the forecast because it explains where the
+                  answer came from, and the forecast is where it goes next.
+                  Absent entirely unless the answer was KG-grounded -- the
+                  backend decides that, not this component. */}
+              {response.graph && (
+                <KnowledgeGraphPanel key={answerId} graph={response.graph} />
+              )}
 
               {response.forecast && <ForecastChart data={response.forecast} />}
             </div>
