@@ -1,4 +1,4 @@
-import type { Evidence, ForecastPoint, QueryResponse } from "../types/contracts";
+import type { AnswerGraph, Evidence, ForecastPoint, QueryResponse } from "../types/contracts";
 import { getToken } from "./tokenStorage";
 
 /**
@@ -27,6 +27,10 @@ interface ApiQueryResponse {
   evidence: Evidence[];
   forecast: ForecastPoint[] | null;
   degraded: boolean;
+  // null whenever the answer did not come from the knowledge graph -- the
+  // backend withholds it rather than sending an empty one, so `graph` being
+  // absent is a statement about provenance, not about the graph being small.
+  graph: AnswerGraph | null;
 }
 
 export async function runQuery(query: string): Promise<QueryResponse> {
@@ -53,5 +57,6 @@ export async function runQuery(query: string): Promise<QueryResponse> {
     merged_evidence: data.evidence,
     forecast: data.forecast ?? undefined,
     degraded: data.degraded,
+    graph: data.graph ?? undefined,
   };
 }

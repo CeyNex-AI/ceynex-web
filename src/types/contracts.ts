@@ -41,4 +41,58 @@ export interface QueryResponse {
   merged_evidence: Evidence[];
   forecast?: ForecastPoint[];
   degraded: boolean;
+  graph?: AnswerGraph;
+}
+
+/**
+ * The knowledge graph behind an answer — ceynex/api/schemas.py's GraphNode /
+ * GraphEdge / AnswerGraph, built by ceynex/kg/subgraph.py.
+ *
+ * Not one of the frozen contracts: `Evidence` and `ForecastPoint` above mirror
+ * TypedDicts in the separate ceynex-contracts repo, but these live in
+ * ceynex-core's own API layer, added additively beside `route` and `sectors`.
+ *
+ * Absent — and so no panel at all — whenever the answer did not come from the
+ * graph. A diagram beside a model-derived or out-of-scope answer would claim a
+ * provenance that isn't there, so the backend withholds it rather than
+ * returning an empty one for the UI to decide about.
+ */
+export interface GraphNode {
+  /** "Country:USA" — the label plus its uniqueness key, stable across reloads. */
+  id: string;
+  label: string;
+  name: string;
+  properties: Record<string, unknown>;
+  /** The node the question was about. At most one, and the layout centres on it. */
+  focus: boolean;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  /** 0..1 within its own relationship type, for stroke width. */
+  weight?: number | null;
+  /** The figure, pre-formatted ("$412M") — `weight` is unit-less by now. */
+  label?: string | null;
+  properties: Record<string, unknown>;
+}
+
+export interface AnswerGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  focus_id?: string | null;
+  /** The Cypher that drew this, for the panel's own provenance footer. */
+  queries: string[];
+  /** There is more graph than is shown. Said out loud, like `degraded`. */
+  truncated: boolean;
+}
+
+/** One hop out from a clicked node — GET /api/graph/expand. Merged into the
+ * canvas rather than replacing it, which is why it has no focus of its own. */
+export interface GraphFragment {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  truncated: boolean;
 }
