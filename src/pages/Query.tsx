@@ -1,10 +1,14 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
+import NewsPanel from "../components/NewsPanel";
+import TrendingNews from "../components/TrendingNews";
 import { fetchHistory, saveQuery, unsaveQuery, type HistoryItem } from "../lib/historyApi";
+import { fetchNewsSearch, type NewsArticle, type NewsSource } from "../lib/newsApi";
 import usePageTitle from "../lib/usePageTitle";
 import { runQuery } from "../lib/queryApi";
+import timeAgo from "../lib/timeAgo";
 import type { QueryResponse } from "../types/contracts";
 
 const EXAMPLE_QUERIES = [
@@ -19,17 +23,11 @@ const DATA_SOURCES = [
   { id: "JAAF", name: "Joint Apparel Association Forum" },
   { id: "UN Comtrade", name: "UN trade statistics" },
   { id: "FAOSTAT", name: "FAO agriculture statistics" },
+  // Listed because this footer claims to list the sources, and news is now one
+  // of them. Qualified, because it is the only entry here that never backs a
+  // figure in an answer.
+  { id: "GDELT", name: "global news index (headlines only, never evidence)" },
 ];
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
 
 const COLLAPSED_HISTORY_COUNT = 3;
 
@@ -165,6 +163,13 @@ export default function Query() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [savedOnly, setSavedOnly] = useState(false);
+  const [news, setNews] = useState<NewsArticle[] | null>(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsSource, setNewsSource] = useState<NewsSource | null>(null);
+  // Guards against a slow response for an earlier question landing after a
+  // faster one for a later question and overwriting it. (runQuery has the same
+  // latent race today; fixing that is a separate change to M3's flow.)
+  const requestSeq = useRef(0);
 
   function reloadHistory() {
     // Best-effort: an unreachable history endpoint should not disturb the
@@ -190,10 +195,39 @@ export default function Query() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!query.trim() || loading) return;
+    const asked = query.trim();
     setLoading(true);
     setError(null);
+
+    // Fired in parallel with the query, never awaited before it. The
+    // orchestrator takes seconds (docs/EVALUATION.md records a 14.6s p95) and
+    // news must neither queue behind it nor delay it -- in practice the panel
+    // fills about a second in, while the answer is still coming.
+    //
+    // Failures are swallowed rather than routed to `error`: that red banner
+    // means "the query failed", and a missing news panel is not that. Same
+    // best-effort posture as reloadHistory above.
+    const seq = ++requestSeq.current;
+    setNews(null);
+    setNewsSource(null);
+    setNewsLoading(true);
+    fetchNewsSearch(asked)
+      .then((result) => {
+        if (seq !== requestSeq.current) return;
+        setNews(result.articles);
+        setNewsSource(result.source);
+      })
+      .catch(() => {
+        if (seq !== requestSeq.current) return;
+        setNews([]);
+        setNewsSource("unavailable");
+      })
+      .finally(() => {
+        if (seq === requestSeq.current) setNewsLoading(false);
+      });
+
     try {
-      const result = await runQuery(query.trim());
+      const result = await runQuery(asked);
       setResponse(result);
       reloadHistory();
     } catch {
@@ -228,17 +262,28 @@ export default function Query() {
           </button>
         </form>
 
-        <div className="print:hidden flex flex-wrap gap-2 mb-8">
-          {EXAMPLE_QUERIES.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => setQuery(example)}
-              className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
-            >
-              {example}
-            </button>
-          ))}
+        {/* Above the static examples, and labelled differently, because the two
+            answer different questions: "what's happening" against "what can I
+            ask". Renders nothing at all until the refresher has produced a
+            panel, so the examples below carry the page on a cold start. */}
+        <TrendingNews onPick={setQuery} />
+
+        <div className="print:hidden mb-8">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+            Try asking
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLE_QUERIES.map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => setQuery(example)}
+                className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
         </div>
 
         <HistoryPanel
@@ -292,7 +337,14 @@ export default function Query() {
               {response.forecast && <ForecastChart data={response.forecast} />}
             </div>
 
-            <EvidencePanel evidence={response.merged_evidence} />
+            {/* Evidence and news share the right column rather than taking a
+                third one -- at max-w-5xl, three columns are all cramped. The
+                wrapper carries the width so EvidencePanel's own `w-full
+                lg:w-80` resolves against it and M3's component is untouched. */}
+            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-6">
+              <EvidencePanel evidence={response.merged_evidence} />
+              <NewsPanel articles={news} loading={newsLoading} source={newsSource} />
+            </div>
           </div>
         )}
 
