@@ -46,9 +46,9 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
-      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-      {subtitle && <p className="text-xs text-gray-400 mt-0.5 mb-3">{subtitle}</p>}
+    <div className="cx-panel-flat p-5">
+      <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">{title}</h2>
+      {subtitle && <p className="text-xs text-gray-400 mt-1 mb-3">{subtitle}</p>}
       {!subtitle && <div className="mt-3" />}
       {children}
     </div>
@@ -194,7 +194,7 @@ function ModelsCard() {
                   type="button"
                   disabled={busy}
                   onClick={() => handleRetrain(m)}
-                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                  className="cx-btn-secondary shrink-0 text-xs px-2.5 py-1"
                 >
                   {busy ? "Retraining…" : "Retrain"}
                 </button>
@@ -253,7 +253,7 @@ function PipelineCard() {
           type="button"
           disabled={ingesting !== null}
           onClick={() => handleIngest("apparel", ["edb", "jaaf"])}
-          className="text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 rounded-md px-3 py-1.5"
+          className="cx-btn-primary text-xs px-3 py-1.5"
         >
           {ingesting === "apparel" ? "Running…" : "Run ingest (EDB + JAAF)"}
         </button>
@@ -262,7 +262,7 @@ function PipelineCard() {
           disabled={ingesting !== null}
           onClick={() => handleIngest("comtrade", ["comtrade"])}
           title="Rate-limited and queried per HS code/year -- can take a minute or more"
-          className="text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-3 py-1.5"
+          className="cx-btn-secondary text-xs px-3 py-1.5"
         >
           {ingesting === "comtrade" ? "Running (can take a while)…" : "Run ingest (Comtrade, slow)"}
         </button>
@@ -375,7 +375,7 @@ function DQFlagsCard() {
                   type="button"
                   disabled={resolving === f.flag_id}
                   onClick={() => handleResolve(f.flag_id)}
-                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                  className="cx-btn-secondary shrink-0 text-xs px-2.5 py-1"
                 >
                   {resolving === f.flag_id ? "Resolving…" : "Resolve"}
                 </button>
@@ -410,8 +410,8 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
         <div className="max-w-sm mx-auto">
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
+          <div className="cx-panel-flat p-5">
             <p className="text-sm text-gray-600 leading-relaxed">
               This page is restricted to the Admin role. You're signed in as{" "}
               <span className="font-medium text-gray-800">
@@ -435,7 +435,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-3xl mx-auto space-y-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
           <p className="text-sm text-gray-500">
             Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
           </p>

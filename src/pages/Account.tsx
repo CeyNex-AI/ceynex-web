@@ -109,11 +109,11 @@ export default function Account() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-md mx-auto space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Account</h1>
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Account</h1>
           <p className="text-sm text-gray-500">Your CeyNex session, preferences, and API keys.</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <div className="cx-panel-flat p-6 space-y-4">
           <div>
             <div className="text-xs font-medium text-gray-500 mb-1">Signed in as</div>
             <div className="text-sm text-gray-800">{userId ?? "Not signed in"}</div>
@@ -129,17 +129,13 @@ export default function Account() {
           <p className="text-xs text-gray-400">
             Demo login: four fixed accounts, no self-service signup.
           </p>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium border border-gray-300 rounded-md px-4 py-2.5 transition-colors"
-          >
+          <button type="button" onClick={handleLogout} className="cx-btn-secondary w-full text-sm px-4 py-2.5">
             Sign out
           </button>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Notification preferences</h2>
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">Notification preferences</h2>
           <p className="text-xs text-gray-400">
             What you'd be notified about, once a delivery channel exists for it. These are saved
             now; nothing is sent yet.
@@ -166,11 +162,7 @@ export default function Account() {
                 </p>
               )}
               <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={prefsSaving}
-                  className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors"
-                >
+                <button type="submit" disabled={prefsSaving} className="cx-btn-primary text-sm px-4 py-2">
                   {prefsSaving ? "Saving..." : "Save"}
                 </button>
                 {prefsSaved && !prefsSaving && <span className="text-xs text-teal-700">Saved.</span>}
@@ -179,8 +171,8 @@ export default function Account() {
           )}
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">API keys</h2>
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">API keys</h2>
           <p className="text-xs text-gray-400">
             For programmatic access to the query API. A key authenticates the same way your login
             session does, at your account's current role.
@@ -258,12 +250,12 @@ export default function Account() {
               onChange={(e) => setNewKeyLabel(e.target.value)}
               placeholder="Label, e.g. CI pipeline"
               maxLength={100}
-              className="flex-1 min-w-0 text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="cx-input flex-1 min-w-0 text-sm px-3 py-2"
             />
             <button
               type="submit"
               disabled={creating || !newKeyLabel.trim()}
-              className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0"
+              className="cx-btn-primary text-sm px-4 py-2 shrink-0"
             >
               {creating ? "Creating..." : "New key"}
             </button>

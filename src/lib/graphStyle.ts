@@ -57,13 +57,13 @@ const NODE_SHAPE: Record<string, NodeShape> = {
  * would leave the accent meaning nothing. The label is carried by shape.
  */
 const NODE_FILL: Record<string, string> = {
-  Commodity: "#e5e7eb", // gray-200
-  ApparelCategory: "#e5e7eb",
-  Country: "#e5e7eb",
-  District: "#f3f4f6", // gray-100
-  HSCode: "#e5e7eb",
-  TradeAgreement: "#f3f4f6",
-  PolicyDocument: "#f3f4f6",
+  Commodity: "#d2e6df", // gray-200 (index.css @theme)
+  ApparelCategory: "#d2e6df",
+  Country: "#d2e6df",
+  District: "#e1f0eb", // gray-100
+  HSCode: "#d2e6df",
+  TradeAgreement: "#e1f0eb",
+  PolicyDocument: "#e1f0eb",
 };
 
 /** Human wording for the four relationship types, for the legend and the
@@ -117,8 +117,9 @@ export const STYLESHEET: StylesheetJson = [
     style: {
       label: "data(name)",
       "font-size": 11,
-      "font-family": "ui-sans-serif, system-ui, sans-serif",
-      color: "#374151", // gray-700
+      "font-family": "'Manrope', ui-sans-serif, system-ui, sans-serif",
+      "font-weight": 700,
+      color: "#324b44", // gray-700 (index.css @theme)
       "text-valign": "bottom",
       "text-margin-y": 5,
       "text-max-width": "90px",
@@ -127,9 +128,9 @@ export const STYLESHEET: StylesheetJson = [
       height: 34,
       shape: (node: { data: (k: string) => string }) => NODE_SHAPE[node.data("kind")] ?? "ellipse",
       "background-color": (node: { data: (k: string) => string }) =>
-        NODE_FILL[node.data("kind")] ?? "#e5e7eb",
+        NODE_FILL[node.data("kind")] ?? "#d2e6df",
       "border-width": 1,
-      "border-color": "#d1d5db", // gray-300
+      "border-color": "#b4d1c8", // gray-300
     },
   },
   {
@@ -140,7 +141,8 @@ export const STYLESHEET: StylesheetJson = [
       width: 62,
       height: 62,
       "font-size": 12,
-      "font-weight": 600,
+      "font-weight": 700,
+      "font-family": "'Manrope', ui-sans-serif, system-ui, sans-serif",
       "background-color": "#0d9488", // teal-600 — spent on this node alone
       color: "#ffffff",
       "text-valign": "center",
@@ -156,11 +158,12 @@ export const STYLESHEET: StylesheetJson = [
       "target-arrow-shape": "triangle",
       "arrow-scale": 0.8,
       width: "mapData(weight, 0, 1, 1.5, 6)",
-      "line-color": "#cbd5e1",
-      "target-arrow-color": "#cbd5e1",
+      "line-color": "#b4d1c8",
+      "target-arrow-color": "#b4d1c8",
       label: "data(label)",
       "font-size": 9,
-      color: "#6b7280", // gray-500
+      "font-family": "'IBM Plex Mono', ui-monospace, monospace",
+      color: "#5f8178", // gray-500
       "text-background-color": "#ffffff",
       "text-background-opacity": 0.85,
       "text-background-padding": "2px",

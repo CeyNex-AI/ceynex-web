@@ -148,9 +148,9 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
   }, [graph, handleExpand]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between gap-3 mb-2">
-        <h2 className="text-sm font-semibold text-gray-900">Knowledge graph</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">Knowledge graph</h2>
         <span className="text-xs text-gray-400">
           {counts.nodes} nodes · {counts.edges} connections
           {graph.truncated && " · showing the largest"}

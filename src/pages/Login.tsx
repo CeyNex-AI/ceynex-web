@@ -83,7 +83,7 @@ export default function Login() {
               <li key={feature.title} className="flex gap-3">
                 <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{feature.title}</p>
+                  <p className="font-display text-sm font-bold text-gray-900">{feature.title}</p>
                   <p className="text-sm text-gray-500 mt-0.5 max-w-sm">{feature.detail}</p>
                 </div>
               </li>
@@ -105,10 +105,7 @@ export default function Login() {
             </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white border border-gray-200 rounded-lg p-6 space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="cx-panel p-6 space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -119,7 +116,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="cx-input w-full px-3 py-2 text-sm"
                 placeholder="you@example.com"
               />
             </div>
@@ -134,7 +131,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="cx-input w-full px-3 py-2 text-sm"
                 placeholder="••••••••"
               />
             </div>
@@ -148,7 +145,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
+              className="cx-btn-primary w-full disabled:cursor-not-allowed text-sm px-4 py-2.5"
             >
               {submitting ? "Signing in..." : "Sign in"}
             </button>
@@ -172,7 +169,7 @@ export default function Login() {
                     setPassword(DEMO_PASSWORD);
                     setError(null);
                   }}
-                  className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
+                  className="cx-chip text-xs px-3 py-1"
                 >
                   {ROLE_LABELS[role]}
                 </button>

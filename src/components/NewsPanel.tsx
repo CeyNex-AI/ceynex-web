@@ -50,9 +50,9 @@ export default function NewsPanel({
   source: NewsSource | null;
 }) {
   return (
-    <aside className="print:hidden w-full lg:w-80 shrink-0 bg-white border border-gray-200 rounded-lg p-4">
+    <aside className="cx-panel print:hidden w-full lg:w-80 shrink-0 p-4">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-900">Related news</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">Related news</h2>
         {source === "cache" && (
           <span
             className="text-[10px] font-medium text-amber-600 bg-amber-50 rounded px-1.5 py-0.5"

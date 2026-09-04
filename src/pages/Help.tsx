@@ -76,7 +76,7 @@ export default function Help() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Help &amp; FAQ</h1>
+        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Help &amp; FAQ</h1>
         <p className="text-sm text-gray-500 mb-6">
           A quick guide to how CeyNex answers questions.
         </p>
@@ -87,8 +87,8 @@ export default function Help() {
          * undifferentiated stream of paragraphs. */}
         <dl className="space-y-3">
           {FAQS.map(({ q, a }) => (
-            <div key={q} className="bg-white border border-gray-200 rounded-lg p-5">
-              <dt className="text-sm font-medium text-gray-900 mb-1.5">{q}</dt>
+            <div key={q} className="cx-panel-flat p-5">
+              <dt className="text-sm font-bold text-gray-900 mb-1.5">{q}</dt>
               <dd className="text-sm text-gray-600 leading-relaxed">{a}</dd>
             </div>
           ))}

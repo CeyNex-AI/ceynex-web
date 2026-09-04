@@ -51,11 +51,19 @@ function NavBar() {
   );
 
   return (
-    <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+    <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3 relative">
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-0 right-0 h-[3px]"
+        style={{
+          background:
+            "linear-gradient(90deg, var(--color-teal-800), var(--color-teal-500) 55%, var(--color-teal-300))",
+        }}
+      />
       <div className="flex items-center gap-1">
         <Link to={userId ? "/query" : "/"} className="flex items-center gap-2 mr-6">
           <Logo />
-          <span className="text-sm font-semibold text-gray-900 tracking-tight">CeyNex</span>
+          <span className="font-display text-sm font-bold text-gray-900 tracking-tight">CeyNex</span>
         </Link>
         <div className="hidden md:flex items-center gap-1">{links(false)}</div>
         {role && (

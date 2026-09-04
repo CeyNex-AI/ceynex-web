@@ -1,1 +1,189 @@
+@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
+
+/**
+ * CeyNex "Signal Deck" visual system.
+ *
+ * The teal accent scale is untouched (`--color-teal-*` stays Tailwind's
+ * defaults) -- it is the real brand colour, already used in the deployed
+ * logo/favicon raster assets and in every focus ring and link in the app, so
+ * re-hueing it risks a mismatch against those assets and a re-audit of every
+ * contrast pair for no real gain. The redesign instead leans on: a
+ * teal-tinted neutral scale in place of flat gray (a neutral should be
+ * chosen, not inherited), a validated status palette distinct from the
+ * accent, and a shape/type system layered on top via the `cx-*` classes
+ * below.
+ */
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded", "Manrope", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Neutral scale: pure Tailwind gray replaced with a teal-hue-biased one, so
+   * "neutral" reads as chosen rather than a default nobody picked. */
+  --color-gray-50: #eff7f5;
+  --color-gray-100: #e1f0eb;
+  --color-gray-200: #d2e6df;
+  --color-gray-300: #b4d1c8;
+  --color-gray-400: #86a89f;
+  --color-gray-500: #5f8178;
+  --color-gray-600: #46645c;
+  --color-gray-700: #324b44;
+  --color-gray-800: #1e322d;
+  --color-gray-900: #0c1e1a;
+
+  /* Status palette (dataviz skill reference/palette.md, validated for CVD
+   * separation and a normal-vision floor) -- fixed and never themed, kept
+   * distinct from the teal accent so a status colour never impersonates it. */
+  --color-emerald-50: #e9faea;
+  --color-emerald-500: #0ca30c;
+  --color-emerald-700: #0a7f0a;
+  --color-amber-50: #fdf3e2;
+  --color-amber-500: #d98a00;
+  --color-amber-600: #b97300;
+  --color-amber-700: #8f5900;
+  --color-red-50: #fdecec;
+  --color-red-200: #f3c6c6;
+  --color-red-500: #d03b3b;
+  --color-red-600: #b52e2e;
+  --color-red-700: #8f2323;
+  --color-red-800: #6f1a1a;
+
+  /* Named aliases for the SVG gauge/chart, which take colour as attribute
+   * values rather than classNames. */
+  --color-status-good: var(--color-emerald-500);
+  --color-status-warning: var(--color-amber-500);
+  --color-status-serious: #d9622f;
+  --color-status-critical: var(--color-red-500);
+}
+
+body {
+  background: var(--color-gray-50);
+  font-family: var(--font-sans);
+}
+
+/* ---- shared shape language -------------------------------------------- */
+
+/**
+ * The primary panel shape: a cut top-right corner (a manifest/customs-stamp
+ * notch) instead of a uniform rounded rectangle, topped with a hairline
+ * gradient. Reserved for the page's hero content -- the answer, the forecast,
+ * the evidence, the login form -- see `cx-panel-flat` for dense, repeated
+ * lists where the notch would just be noise.
+ */
+.cx-panel {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  box-shadow:
+    0 1px 2px rgba(12, 30, 26, 0.04),
+    0 10px 24px -16px rgba(12, 30, 26, 0.22);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+.cx-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-teal-800), var(--color-teal-500) 60%, var(--color-teal-300));
+}
+.cx-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  background: var(--color-gray-50);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  border-left: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+/** A plain, calmer card for dense stacks (Admin, Account, Help's FAQ list):
+ * new colours and a touch more radius than the old flat `rounded-lg`, but no
+ * notch -- a shape spent on every item in a long list stops reading as a
+ * shape at all. */
+.cx-panel-flat {
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(12, 30, 26, 0.03);
+}
+
+/* ---- buttons ------------------------------------------------------------ */
+
+.cx-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-teal-800), var(--color-teal-600));
+  border: none;
+  border-radius: 10px;
+  transition: filter 0.15s ease;
+}
+.cx-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.cx-btn-primary:disabled {
+  background: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.cx-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--color-gray-700);
+  background: #fff;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 10px;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.cx-btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-teal-500);
+  color: var(--color-teal-700);
+}
+
+/* ---- inputs -------------------------------------------------------------- */
+
+.cx-input {
+  border: 1px solid var(--color-gray-300);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+.cx-input:focus {
+  outline: 2px solid var(--color-teal-500);
+  outline-offset: 1px;
+  border-color: var(--color-teal-500);
+}
+
+/* ---- chips ---------------------------------------------------------------- */
+
+.cx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-gray-200);
+  background: #fff;
+  color: var(--color-gray-600);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.cx-chip:hover {
+  border-color: var(--color-teal-300);
+  color: var(--color-teal-700);
+}

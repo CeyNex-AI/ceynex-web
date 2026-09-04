@@ -249,7 +249,7 @@ export default function Query() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Ask CeyNex</h1>
+        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Ask CeyNex</h1>
         <p className="text-sm text-gray-500 mb-6">
           Ask about Sri Lanka's tea, cinnamon, and apparel export performance.
         </p>
@@ -260,12 +260,12 @@ export default function Query() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. How are apparel exports to the United States doing?"
-            className="flex-1 rounded-md border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="cx-input flex-1 px-4 py-2.5 text-sm"
           />
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-5 py-2.5 transition-colors"
+            className="cx-btn-primary text-sm px-5 py-2.5"
           >
             {loading ? "Asking…" : "Ask"}
           </button>
@@ -287,7 +287,7 @@ export default function Query() {
                 key={example}
                 type="button"
                 onClick={() => setQuery(example)}
-                className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
+                className="cx-chip text-xs px-3 py-1"
               >
                 {example}
               </button>
@@ -321,7 +321,7 @@ export default function Query() {
           // instead.
           <div className="flex flex-col lg:flex-row print:flex-col gap-6">
             <div className="flex-1 min-w-0 space-y-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-5">
+              <div className="cx-panel p-5">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <p className="text-sm text-gray-500 italic">"{response.query}"</p>
                   <div className="flex items-center gap-2 shrink-0">
@@ -329,7 +329,7 @@ export default function Query() {
                     <button
                       type="button"
                       onClick={() => window.print()}
-                      className="print:hidden text-xs font-medium text-gray-500 hover:text-teal-700 border border-gray-200 rounded-md px-2.5 py-1"
+                      className="cx-btn-secondary print:hidden text-xs px-2.5 py-1"
                     >
                       Print report
                     </button>
