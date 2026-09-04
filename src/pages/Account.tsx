@@ -135,7 +135,7 @@ export default function Account() {
         </div>
 
         <div className="cx-panel-flat p-6 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">Notification preferences</h2>
+          <h2 className="cx-panel-title">Notification preferences</h2>
           <p className="text-xs text-gray-400">
             What you'd be notified about, once a delivery channel exists for it. These are saved
             now; nothing is sent yet.
@@ -172,7 +172,7 @@ export default function Account() {
         </div>
 
         <div className="cx-panel-flat p-6 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">API keys</h2>
+          <h2 className="cx-panel-title">API keys</h2>
           <p className="text-xs text-gray-400">
             For programmatic access to the query API. A key authenticates the same way your login
             session does, at your account's current role.

@@ -15,6 +15,8 @@ import {
   triggerIngest,
 } from "../lib/adminApi";
 import { ROLE_LABELS } from "../lib/roles";
+import { type Theme } from "../lib/siteApi";
+import { useTheme } from "../lib/useTheme";
 import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
@@ -47,7 +49,7 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="cx-panel-flat p-5">
-      <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">{title}</h2>
+      <h2 className="cx-panel-title">{title}</h2>
       {subtitle && <p className="text-xs text-gray-400 mt-1 mb-3">{subtitle}</p>}
       {!subtitle && <div className="mt-3" />}
       {children}
@@ -388,6 +390,67 @@ function DQFlagsCard() {
   );
 }
 
+/**
+ * Site-wide, not per-browser: flipping this changes what every visitor sees,
+ * signed in or not (src/lib/theme.tsx). There is deliberately no "preview"
+ * step -- the toggle *is* the change, same posture as Retrain/Resolve above.
+ */
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  const [saving, setSaving] = useState<Theme | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePick(next: Theme) {
+    if (next === theme || saving) return;
+    setSaving(next);
+    setError(null);
+    try {
+      await setTheme(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't change the site theme.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  const optionClass = (option: Theme) =>
+    `text-xs font-medium rounded-md px-3 py-1.5 border transition-colors ${
+      theme === option
+        ? "bg-teal-50 text-teal-700 border-teal-200"
+        : "text-gray-500 border-gray-200 hover:text-gray-700"
+    }`;
+
+  return (
+    <Card title="Appearance" subtitle="Changes what every visitor sees, not just this browser.">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={saving !== null}
+          onClick={() => handlePick("classic")}
+          aria-pressed={theme === "classic"}
+          className={optionClass("classic")}
+        >
+          {saving === "classic" ? "Saving…" : "Classic"}
+        </button>
+        <button
+          type="button"
+          disabled={saving !== null}
+          onClick={() => handlePick("signal-deck")}
+          aria-pressed={theme === "signal-deck"}
+          className={optionClass("signal-deck")}
+        >
+          {saving === "signal-deck" ? "Saving…" : "Signal Deck"}
+        </button>
+      </div>
+    </Card>
+  );
+}
+
 export default function Admin() {
   usePageTitle("Admin");
   const { role } = useAuth();
@@ -440,6 +503,8 @@ export default function Admin() {
             Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
           </p>
         </div>
+
+        <AppearanceCard />
 
         <Card title="System status">
           {healthError && (

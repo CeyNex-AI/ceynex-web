@@ -36,7 +36,7 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
   return (
     <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">Forecast</h2>
+        <h2 className="cx-panel-title">Forecast</h2>
         <span className="text-xs text-gray-400">shaded band = uncertainty interval</span>
       </div>
       {/* The chart is an SVG rendered by Recharts with no text equivalent of

@@ -10,7 +10,7 @@ import type { Evidence } from "../types/contracts";
 export default function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
   return (
     <aside className="cx-panel w-full lg:w-80 shrink-0 p-4">
-      <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Evidence</h2>
+      <h2 className="cx-panel-title mb-3">Evidence</h2>
       {evidence.length === 0 ? (
         <p className="text-sm text-gray-500">No supporting evidence for this answer.</p>
       ) : (

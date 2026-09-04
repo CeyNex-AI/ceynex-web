@@ -1,15 +1,30 @@
-import { confidenceBand, CONFIDENCE_BAND_COLOR } from "../lib/confidence";
+import { CONFIDENCE_BAND_COLOR, CONFIDENCE_BAND_STYLES, confidenceBand } from "../lib/confidence";
+import { useTheme } from "../lib/useTheme";
 
 const RADIUS = 20;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 /**
- * A radial gauge rather than a pill. The number and the band name are both
- * still real text, not just an arc -- confidence is never carried by colour
- * alone, only reinforced by it.
+ * Classic: the original pill. Signal Deck: a radial gauge instead -- the
+ * number and the band name are both still real text either way, not just an
+ * arc, so confidence is never carried by colour alone, only reinforced by it.
  */
 export default function ConfidenceBadge({ score }: { score: number }) {
+  const { theme } = useTheme();
   const band = confidenceBand(score);
+
+  if (theme !== "signal-deck") {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${CONFIDENCE_BAND_STYLES[band]}`}
+        title={`Confidence: ${(score * 100).toFixed(0)}%`}
+      >
+        {band} confidence
+        <span className="opacity-70">· {(score * 100).toFixed(0)}%</span>
+      </span>
+    );
+  }
+
   const color = CONFIDENCE_BAND_COLOR[band];
   const pct = Math.max(0, Math.min(1, score));
   const offset = CIRCUMFERENCE * (1 - pct);
@@ -43,10 +58,7 @@ export default function ConfidenceBadge({ score }: { score: number }) {
           {(score * 100).toFixed(0)}%
         </text>
       </svg>
-      <span
-        className="text-[10px] font-bold uppercase tracking-wide"
-        style={{ color }}
-      >
+      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>
         {band}
       </span>
     </div>

@@ -4,6 +4,7 @@ import Logo from "./components/Logo";
 import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./lib/auth";
 import { ROLE_LABELS } from "./lib/roles";
+import { ThemeProvider } from "./lib/theme";
 import { useAuth } from "./lib/useAuth";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
@@ -52,14 +53,7 @@ function NavBar() {
 
   return (
     <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3 relative">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-0 right-0 h-[3px]"
-        style={{
-          background:
-            "linear-gradient(90deg, var(--color-teal-800), var(--color-teal-500) 55%, var(--color-teal-300))",
-        }}
-      />
+      <div aria-hidden="true" className="cx-nav-hairline absolute top-0 left-0 right-0 h-[3px]" />
       <div className="flex items-center gap-1">
         <Link to={userId ? "/query" : "/"} className="flex items-center gap-2 mr-6">
           <Logo />
@@ -97,57 +91,59 @@ function NavBar() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        {/* Keyboard-only users can jump straight past the nav; visually
-         * hidden until focused, matching the standard skip-link pattern. */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
-        >
-          Skip to main content
-        </a>
-        <NavBar />
-        <main id="main-content">
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route
-              path="/query"
-              element={
-                <RequireAuth>
-                  <Query />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/help"
-              element={
-                <RequireAuth>
-                  <Help />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/account"
-              element={
-                <RequireAuth>
-                  <Account />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth>
-                  <Admin />
-                </RequireAuth>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          {/* Keyboard-only users can jump straight past the nav; visually
+           * hidden until focused, matching the standard skip-link pattern. */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
+          >
+            Skip to main content
+          </a>
+          <NavBar />
+          <main id="main-content">
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route
+                path="/query"
+                element={
+                  <RequireAuth>
+                    <Query />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <RequireAuth>
+                    <Help />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/account"
+                element={
+                  <RequireAuth>
+                    <Account />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth>
+                    <Admin />
+                  </RequireAuth>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
