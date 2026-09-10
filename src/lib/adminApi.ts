@@ -134,6 +134,22 @@ export async function fetchLLMStatus(): Promise<LLMStatus> {
   return unwrap<LLMStatus>(res, "Loading LLM status");
 }
 
+// --- audit log (SRS 3.4.7) -------------------------------------------
+
+export interface AuditLogItem {
+  id: number;
+  actor_email: string;
+  action: string;
+  target: string | null;
+  logged_at: string;
+}
+
+export async function fetchAuditLog(): Promise<AuditLogItem[]> {
+  const res = await fetch("/api/admin/audit-log", { headers: authHeaders() });
+  const data = await unwrap<{ entries: AuditLogItem[] }>(res, "Loading audit log");
+  return data.entries;
+}
+
 // --- user accounts + roles (RBAC, SRS 3.5.4) --------------------------
 
 export interface UserAdminItem {
