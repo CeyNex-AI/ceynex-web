@@ -23,7 +23,7 @@ const PREFERENCE_LABELS: Record<keyof NotificationPreferences, string> = {
 
 export default function Account() {
   usePageTitle("Account");
-  const { userId, role, logout } = useAuth();
+  const { userId, role, logout, changeEmail, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
@@ -46,6 +46,18 @@ export default function Account() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSaved, setPwSaved] = useState(false);
+
+  const [emailNew, setEmailNew] = useState("");
+  const [emailPw, setEmailPw] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSaved, setEmailSaved] = useState(false);
+
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletePw, setDeletePw] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPreferences()
@@ -143,6 +155,48 @@ export default function Account() {
     }
   }
 
+  async function handleChangeEmail(e: FormEvent) {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSaved(false);
+    if (!emailNew.trim() || !emailPw) {
+      setEmailError("Enter the new email and your current password.");
+      return;
+    }
+    if (emailNew.trim().toLowerCase() === userId?.toLowerCase()) {
+      setEmailError("That's already your email.");
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      await changeEmail(emailPw, emailNew.trim());
+      setEmailSaved(true);
+      setEmailNew("");
+      setEmailPw("");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Couldn't change email.");
+    } finally {
+      setEmailSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount(e: FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+    if (deleteConfirm !== "DELETE") {
+      setDeleteError('Type DELETE to confirm.');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePw);
+      navigate("/");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Couldn't delete the account.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-md mx-auto space-y-6">
@@ -216,6 +270,48 @@ export default function Account() {
                 {pwSaving ? "Changing..." : "Change password"}
               </button>
               {pwSaved && !pwSaving && <span className="text-xs text-teal-700">Password changed.</span>}
+            </div>
+          </form>
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">Email</h2>
+          <p className="text-xs text-gray-400">
+            Your history and API keys move with it. Other devices are signed out; this one stays in.
+          </p>
+          <form onSubmit={handleChangeEmail} className="space-y-3">
+            <input
+              type="email"
+              value={emailNew}
+              onChange={(e) => setEmailNew(e.target.value)}
+              autoComplete="email"
+              placeholder="New email"
+              aria-label="New email"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            <input
+              type="password"
+              value={emailPw}
+              onChange={(e) => setEmailPw(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Current password"
+              aria-label="Current password to confirm the email change"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            {emailError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                {emailError}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={emailSaving || !emailNew || !emailPw}
+                className="cx-btn-primary text-sm px-4 py-2"
+              >
+                {emailSaving ? "Changing..." : "Change email"}
+              </button>
+              {emailSaved && !emailSaving && <span className="text-xs text-teal-700">Email changed.</span>}
             </div>
           </form>
         </div>
@@ -350,6 +446,69 @@ export default function Account() {
             <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
               {createError}
             </p>
+          )}
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-3 border border-red-200">
+          <h2 className="cx-panel-title text-red-700">Delete account</h2>
+          <p className="text-xs text-gray-500">
+            Permanent. Removes your account, saved queries, history, and API keys. There's no undo.
+          </p>
+          {!showDelete ? (
+            <button
+              type="button"
+              onClick={() => setShowDelete(true)}
+              className="text-sm font-medium text-red-700 hover:text-red-800 border border-red-300 rounded-md px-3 py-2"
+            >
+              Delete my account
+            </button>
+          ) : (
+            <form onSubmit={handleDeleteAccount} className="space-y-3">
+              <input
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                autoComplete="off"
+                placeholder="Type DELETE to confirm"
+                aria-label="Type DELETE to confirm account deletion"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              <input
+                type="password"
+                value={deletePw}
+                onChange={(e) => setDeletePw(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Current password"
+                aria-label="Current password to confirm account deletion"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              {deleteError && (
+                <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                  {deleteError}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={deleting || deleteConfirm !== "DELETE" || !deletePw}
+                  className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-md px-4 py-2"
+                >
+                  {deleting ? "Deleting..." : "Permanently delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDelete(false);
+                    setDeleteConfirm("");
+                    setDeletePw("");
+                    setDeleteError(null);
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </div>
