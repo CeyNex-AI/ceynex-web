@@ -268,6 +268,35 @@ function toRow(event: TraceEvent, index: number): Row | null {
         status: event.status === "ok" ? "ok" : "empty",
       };
 
+    case "instruction":
+      // The backend has always emitted this; without a case it was dropped
+      // silently, so a reader could not see their preference take effect. The
+      // length only — the text is theirs and already on their Account page.
+      return {
+        key,
+        icon: "✎",
+        label: "Applied your answer preferences",
+        detail: event.chars ? `${event.chars} characters` : undefined,
+        meta: "tone and format only — never which sources or figures are used",
+        status: "ok",
+      };
+
+    case "answer_delta":
+      // The answer itself, arriving sentence by sentence. It is rendered as the
+      // answer, not as a step — a row per sentence would duplicate the prose.
+      return null;
+
+    case "answer_reset":
+      return {
+        key,
+        icon: "↺",
+        label:
+          event.reason === "retry"
+            ? "Started the answer again after a failed attempt"
+            : "Withdrew a draft that stated a figure no finding supports",
+        status: event.reason === "retry" ? "ok" : "empty",
+      };
+
     default:
       return null; // node_start / node_end / anything a newer backend reports
   }

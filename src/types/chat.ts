@@ -90,6 +90,15 @@ export interface TraceEvent {
   mode?: "discuss" | "analyse";
   reason?: string;
   standalone_query?: string | null;
+
+  // instruction — the reader's standing preference was applied (tone only)
+  applied?: boolean;
+  chars?: number;
+
+  // answer_delta — one grounded sentence of the answer; answer_reset — the
+  // draft so far was withdrawn (`reason`: "ungrounded" | "retry")
+  text?: string;
+  index?: number;
 }
 
 /** What the `done` frame carries, and what a stored assistant message replays. */
