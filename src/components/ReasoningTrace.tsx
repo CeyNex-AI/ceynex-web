@@ -222,6 +222,31 @@ function toRow(event: TraceEvent, index: number): Row | null {
         elapsedMs: event.elapsed_ms,
       };
 
+    case "web_search":
+      return {
+        key,
+        icon: "🌐",
+        label:
+          event.status === "ok"
+            ? `Searched the web — ${event.results ?? 0} result${event.results === 1 ? "" : "s"}`
+            : "Web search unavailable",
+        meta: event.status === "ok" ? (event.domains ?? []).join(", ") : event.status,
+        status: event.status === "ok" ? "ok" : "empty",
+      };
+
+    case "clarify":
+      // Asked, or considered and decided against. Both are real steps: a gate
+      // that silently declined to fire is still a decision the reader can audit.
+      return {
+        key,
+        icon: "?",
+        label: event.asked
+          ? "Asked a clarifying question"
+          : "Considered asking, then answered as put",
+        meta: event.method === "template" ? "deterministic phrasing" : event.method,
+        status: "ok",
+      };
+
     case "turn":
       return {
         key,
@@ -264,12 +289,22 @@ export default function ReasoningTrace({
   running,
   elapsedMs,
   defaultOpen,
+  onOpen,
+  loading,
 }: {
   events: TraceEvent[];
   running: boolean;
   elapsedMs?: number;
   /** Open while streaming, collapsed once the answer is there. */
   defaultOpen?: boolean;
+  /**
+   * Called the first time the reader opens a trace that has no events yet, so a
+   * stored turn can fetch its persisted trace on demand. Its presence is also
+   * what keeps the toggle rendered for an empty trace — without it, a turn
+   * loaded from the transcript shows no way to ask for its steps at all.
+   */
+  onOpen?: () => void;
+  loading?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? running);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -282,7 +317,7 @@ export default function ReasoningTrace({
     if (!running && !touched.current) setOpen(false);
   }, [running]);
 
-  if (rows.length === 0 && !running) return null;
+  if (rows.length === 0 && !running && !onOpen) return null;
 
   return (
     <div className="border border-gray-200 rounded-lg bg-gray-50 text-sm">
@@ -290,6 +325,7 @@ export default function ReasoningTrace({
         type="button"
         onClick={() => {
           touched.current = true;
+          if (!open && rows.length === 0) onOpen?.();
           setOpen((value) => !value);
         }}
         aria-expanded={open}
@@ -308,7 +344,9 @@ export default function ReasoningTrace({
               ✓
             </span>
           )}
-          <span className="font-medium">{running ? "Working…" : summary}</span>
+          <span className="font-medium">
+            {running ? "Working…" : loading ? "Loading steps…" : summary}
+          </span>
         </span>
         <span className="text-xs text-gray-400">{open ? "Hide" : "Show"} steps</span>
       </button>
