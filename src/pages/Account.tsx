@@ -11,6 +11,7 @@ import {
   type NewApiKey,
   type NotificationPreferences,
 } from "../lib/accountApi";
+import PasswordStrength from "../components/PasswordStrength";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
@@ -238,15 +239,18 @@ export default function Account() {
               aria-label="Current password"
               className="cx-input w-full text-sm px-3 py-2"
             />
-            <input
-              type="password"
-              value={pwNew}
-              onChange={(e) => setPwNew(e.target.value)}
-              autoComplete="new-password"
-              placeholder="New password (8+ characters)"
-              aria-label="New password"
-              className="cx-input w-full text-sm px-3 py-2"
-            />
+            <div>
+              <input
+                type="password"
+                value={pwNew}
+                onChange={(e) => setPwNew(e.target.value)}
+                autoComplete="new-password"
+                placeholder="New password (8+ characters)"
+                aria-label="New password"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              <PasswordStrength password={pwNew} />
+            </div>
             <input
               type="password"
               value={pwConfirm}
