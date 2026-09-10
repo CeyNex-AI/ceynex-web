@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { changeEmailApi, deleteAccountApi } from "./accountApi";
+import { setSessionExpiredHandler } from "./apiFetch";
 import { AuthContext } from "./authContext";
 import { fetchMe, loginApi, signupApi } from "./authApi";
 import type { Role } from "./roles";
@@ -56,6 +57,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(result.role as Role);
     setSessionExpired(false);
   }
+
+  // Any authed API call coming back 401 (token expired, or the session cut
+  // from another device) drops the local session and flags it, so RequireAuth
+  // redirects to Login and the "you were signed out" notice shows — without
+  // waiting for a page reload.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      clearToken();
+      setUserId(null);
+      setRole(null);
+      setSessionExpired(true);
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   async function login(email: string, password: string) {
     applySession(await loginApi(email, password));

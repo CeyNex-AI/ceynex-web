@@ -1,4 +1,5 @@
 import { getToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * Real GET /api/history (+ the save/unsave actions), proxied same-origin the
@@ -27,7 +28,7 @@ function authHeaders(): HeadersInit {
 
 export async function fetchHistory(options?: { savedOnly?: boolean }): Promise<HistoryItem[]> {
   const query = options?.savedOnly ? "?saved=true" : "";
-  const res = await fetch(`/api/history${query}`, { headers: authHeaders() });
+  const res = await apiFetch(`/api/history${query}`, { headers: authHeaders() });
 
   if (!res.ok) {
     throw new Error(`Couldn't load history (${res.status}).`);
@@ -38,7 +39,7 @@ export async function fetchHistory(options?: { savedOnly?: boolean }): Promise<H
 }
 
 async function setSaved(id: number, saved: boolean): Promise<void> {
-  const res = await fetch(`/api/history/${id}/${saved ? "save" : "unsave"}`, {
+  const res = await apiFetch(`/api/history/${id}/${saved ? "save" : "unsave"}`, {
     method: "POST",
     headers: authHeaders(),
   });

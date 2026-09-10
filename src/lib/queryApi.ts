@@ -1,5 +1,6 @@
 import type { AnswerGraph, Evidence, ForecastPoint, QueryResponse } from "../types/contracts";
 import { getToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * Real POST /api/query, proxied same-origin by nginx on the frontend VM
@@ -35,7 +36,7 @@ interface ApiQueryResponse {
 
 export async function runQuery(query: string): Promise<QueryResponse> {
   const token = getToken();
-  const res = await fetch("/api/query", {
+  const res = await apiFetch("/api/query", {
     method: "POST",
     headers: {
       "content-type": "application/json",

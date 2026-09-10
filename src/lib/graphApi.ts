@@ -1,5 +1,6 @@
 import type { GraphFragment } from "../types/contracts";
 import { getToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * GET /api/graph/expand — one hop out from a node the user clicked in the
@@ -17,7 +18,7 @@ import { getToken } from "./tokenStorage";
  */
 export async function expandNode(nodeId: string): Promise<GraphFragment> {
   const token = getToken();
-  const res = await fetch(`/api/graph/expand?node=${encodeURIComponent(nodeId)}`, {
+  const res = await apiFetch(`/api/graph/expand?node=${encodeURIComponent(nodeId)}`, {
     headers: token ? { authorization: `Bearer ${token}` } : {},
   });
 
