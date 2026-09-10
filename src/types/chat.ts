@@ -162,6 +162,23 @@ export interface ChatMessage {
   elapsed_ms?: number | null;
   usage?: UsageSummary | null;
   query_history_id?: number | null;
+  /** The linked `query_history` row's saved flag, read through the join. */
+  saved?: boolean;
+  /** SRS 3.1.4's working behind `confidence`, when it was computed. */
+  confidence_breakdown?: Breakdown | null;
+  /** A discussion only: false when its prose was withheld as ungrounded. */
+  grounded?: boolean | null;
+  /** A user turn only: the query actually run, when it differs from `content`. */
+  effective_query?: string | null;
+  /** A regenerated answer: the id of the version it replaces. */
+  regenerated_from?: number | null;
+  /**
+   * Client-only, never sent by the server: the key of the live turn this
+   * message was folded from, so related news fetched beside that turn stays
+   * beside it. A transcript reloaded from the server has none, by design — see
+   * the `news` note on Chat.tsx.
+   */
+  client_key?: string;
 }
 
 export interface ConversationDetail {

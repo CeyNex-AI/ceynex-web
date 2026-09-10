@@ -34,6 +34,9 @@ import { fetchNewsSearch } from "../lib/newsApi";
 import type { NewsArticle, NewsSource } from "../lib/newsApi";
 import { conversationToMarkdown } from "../lib/exportConversation";
 import { ChatStreamError, streamChat, streamClarifyAnswer } from "../lib/streamChat";
+import type { DoneFrame } from "../lib/streamChat";
+import { foldTurn } from "../lib/transcript";
+import type { FinishedTurn } from "../lib/transcript";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 import type {
@@ -52,6 +55,8 @@ const EXAMPLES = [
 
 /** A turn being streamed right now, before it becomes a stored message. */
 interface LiveTurn {
+  /** Client-only; carried onto the folded messages so the turn's news follows. */
+  key: string;
   question: string;
   events: TraceEvent[];
   answer?: AnswerPayload;
@@ -68,16 +73,27 @@ interface LiveTurn {
   /** The gate asked one question back instead of answering. Not a failure. */
   clarify?: ClarifyPrompt;
   done: boolean;
-  /**
-   * Related coverage, fetched beside the turn rather than carried by it. News
-   * is not evidence (see NewsPanel) and is not persisted with the message, so
-   * a reloaded transcript shows none — deliberately: headlines chosen for
-   * today would be stale beside an analysis from last week, and presenting
-   * them as though they accompanied it would be a claim we cannot support.
-   */
-  news?: NewsArticle[] | null;
-  newsSource?: NewsSource | null;
-  newsLoading?: boolean;
+}
+
+/**
+ * Related coverage, fetched beside a turn rather than carried by it, and keyed
+ * by that turn — so a slow response for turn N lands on turn N even after N+1
+ * has started, and survives the turn being folded into the transcript.
+ *
+ * News is not evidence (see NewsPanel) and is not persisted with the message,
+ * so a reloaded transcript shows none — deliberately: headlines chosen for
+ * today would be stale beside an analysis from last week, and presenting them
+ * as though they accompanied it would be a claim we cannot support.
+ */
+interface TurnNews {
+  articles: NewsArticle[] | null;
+  source: NewsSource | null;
+  loading: boolean;
+}
+
+/** The turn in progress, as the stream handlers accumulate it. */
+interface TurnInProgress extends FinishedTurn {
+  events: TraceEvent[];
 }
 
 export default function Chat() {
@@ -95,7 +111,14 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
 
   const abort = useRef<AbortController | null>(null);
-  const newsSeq = useRef(0);
+  const [news, setNews] = useState<Record<string, TurnNews>>({});
+  /**
+   * The turn being streamed, accumulated outside React state so the `done`
+   * handler can fold it into the transcript in one step. Kept in a ref rather
+   * than read back from `live`, whose latest render the handler cannot see.
+   */
+  const inProgress = useRef<TurnInProgress | null>(null);
+  const turnCounter = useRef(0);
 
   /**
    * Persisted traces, fetched on demand and keyed by `request_id`. A stored
@@ -145,12 +168,15 @@ export default function Chat() {
   }, [reloadConversations]);
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    // Smooth scrolling is motion, and the reduced-motion preference covers it.
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    bottom.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" });
   }, [messages.length, live?.events.length, live?.done]);
 
   async function openConversation(id: number) {
     setActiveId(id);
     setLive(null);
+    inProgress.current = null;
     setError(null);
     try {
       const detail = await fetchConversation(id);
@@ -166,6 +192,7 @@ export default function Chat() {
     setActiveId(null);
     setMessages([]);
     setLive(null);
+    inProgress.current = null;
     setError(null);
   }
 
@@ -176,27 +203,27 @@ export default function Chat() {
    * delay it). Failures are swallowed rather than shown: the red banner means
    * "the turn failed", and a missing news panel is not that.
    *
-   * `newsSeq` guards against a slow response for turn N landing after turn N+1
-   * has already started, the same way `Query.tsx` guards a re-submitted query.
+   * Keyed by turn, which is what replaced the old sequence guard: a slow
+   * response for turn N can only ever land on turn N.
    */
-  function loadNews(asked: string) {
-    const seq = ++newsSeq.current;
-    setLive((current) => (current ? { ...current, newsLoading: true } : current));
+  function loadNews(asked: string, turnKey: string) {
+    setNews((current) => ({
+      ...current,
+      [turnKey]: { articles: null, source: null, loading: true },
+    }));
     fetchNewsSearch(asked)
-      .then((result) => {
-        if (seq !== newsSeq.current) return;
-        setLive((current) =>
-          current
-            ? { ...current, news: result.articles, newsSource: result.source, newsLoading: false }
-            : current,
-        );
-      })
-      .catch(() => {
-        if (seq !== newsSeq.current) return;
-        setLive((current) =>
-          current ? { ...current, news: [], newsSource: "unavailable", newsLoading: false } : current,
-        );
-      });
+      .then((result) =>
+        setNews((current) => ({
+          ...current,
+          [turnKey]: { articles: result.articles, source: result.source, loading: false },
+        })),
+      )
+      .catch(() =>
+        setNews((current) => ({
+          ...current,
+          [turnKey]: { articles: [], source: "unavailable", loading: false },
+        })),
+      );
   }
 
   /**
@@ -204,19 +231,20 @@ export default function Chat() {
    * clarify route streams the same frames — so it is built once rather than
    * written twice and allowed to drift.
    */
-  function handlers(asked: string) {
+  function handlers() {
     return {
       onEvent: (event: TraceEvent) => {
-        if (event.kind === "turn" && event.mode === "analyse") {
-          loadNews(event.standalone_query || asked);
+        const turn = inProgress.current;
+        if (!turn) return;
+        turn.events.push(event);
+        if (event.kind === "turn") {
+          turn.mode = event.mode ?? turn.mode;
+          if (event.mode === "analyse") loadNews(event.standalone_query || turn.question, turn.key);
         }
+        const events = [...turn.events];
         setLive((current) =>
           current
-            ? {
-                ...current,
-                events: [...current.events, event],
-                mode: event.kind === "turn" ? event.mode : current.mode,
-              }
+            ? { ...current, events, mode: event.kind === "turn" ? event.mode : current.mode }
             : current,
         );
       },
@@ -224,10 +252,25 @@ export default function Chat() {
         setLive((current) => (current ? { ...current, error: message } : current)),
       onClarify: (prompt: ClarifyPrompt) =>
         setLive((current) => (current ? { ...current, clarify: prompt } : current)),
-      onDone: (frame: { answer?: AnswerPayload; usage?: UsageSummary }) =>
+      onDone: (frame: DoneFrame) => {
+        const turn = inProgress.current;
+        // A finished answer becomes two ordinary transcript rows at once — the
+        // shape a reload would produce — so it stays on screen when the next
+        // question starts, and can be rated, saved and exported straight away.
+        if (turn && frame.answer && !frame.failed && !frame.clarify) {
+          setMessages((current) => [...current, ...foldTurn(turn, frame, current)]);
+          if (frame.request_id) {
+            const requestId = frame.request_id;
+            setTraces((current) => ({ ...current, [requestId]: turn.events }));
+          }
+          inProgress.current = null;
+          setLive(null);
+          return;
+        }
         setLive((current) =>
           current ? { ...current, answer: frame.answer, usage: frame.usage, done: true } : current,
-        ),
+        );
+      },
       onDropped: () =>
         setLive((current) => (current ? { ...current, dropped: true, done: true } : current)),
     };
@@ -235,14 +278,13 @@ export default function Chat() {
 
   /** Answer the gate's question, or wave it past, and stream the real turn. */
   async function resolveClarification(pendingId: number, answers: string[], skip: boolean) {
-    const asked = live?.question ?? "";
     const controller = new AbortController();
     abort.current = controller;
     setLive((current) =>
       current ? { ...current, clarify: undefined, done: false, error: undefined } : current,
     );
     try {
-      await streamClarifyAnswer(pendingId, { answers, skip }, handlers(asked), controller.signal);
+      await streamClarifyAnswer(pendingId, { answers, skip }, handlers(), controller.signal);
       if (activeId) void reloadConversations();
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -314,18 +356,20 @@ export default function Chat() {
 
     const controller = new AbortController();
     abort.current = controller;
-    setLive({ question: asked, events: [], done: false });
+    const key = `turn-${++turnCounter.current}`;
+    inProgress.current = { key, question: asked, events: [] };
+    setLive({ key, question: asked, events: [], done: false });
 
     // A first turn always runs the graph, and the backend emits no `turn` frame
     // for it (routes/chat.py only classifies against an existing transcript),
     // so there is nothing to wait for. Later turns fire from the `turn` frame
-    // below, once it says the graph is actually running.
-    if (messages.length === 0) loadNews(asked);
+    // above, once it says the graph is actually running.
+    if (messages.length === 0) loadNews(asked, key);
 
     try {
       await streamChat(
         { query: asked, ...(conversationId ? { conversation_id: conversationId } : {}) },
-        handlers(asked),
+        handlers(),
         controller.signal,
       );
       // The title is generated server-side after the first turn, so the sidebar
@@ -428,7 +472,11 @@ export default function Chat() {
         <ol className="space-y-6">
           {messages.map((message) =>
             message.role === "user" ? (
-              <UserTurn key={message.seq} content={message.content} />
+              <UserTurn
+                key={message.seq}
+                content={message.content}
+                interpretedAs={message.effective_query}
+              />
             ) : (
               <AssistantTurn
                 key={message.seq}
@@ -447,15 +495,22 @@ export default function Chat() {
                 messageId={message.id ?? undefined}
                 onFollowUp={(question) => void submit(question)}
                 usage={message.usage ?? undefined}
+                queryHistoryId={message.query_history_id}
+                saved={message.saved}
+                news={message.client_key ? news[message.client_key]?.articles : undefined}
+                newsSource={message.client_key ? news[message.client_key]?.source : undefined}
+                newsLoading={message.client_key ? news[message.client_key]?.loading : undefined}
                 answer={{
                   answer: message.content,
                   confidence: message.confidence ?? null,
                   confidence_band: message.confidence_band ?? null,
+                  confidence_breakdown: message.confidence_breakdown ?? null,
                   agents_used: message.agents_used,
                   evidence: message.evidence,
                   forecast: message.forecast,
                   graph: message.graph,
                   degraded: message.degraded ?? false,
+                  grounded: message.grounded ?? undefined,
                   route: message.route,
                   sectors: message.sectors,
                   unanswered: message.unanswered,
@@ -476,9 +531,9 @@ export default function Chat() {
                 usage={live.usage}
                 mode={live.mode}
                 error={live.error}
-                news={live.news}
-                newsSource={live.newsSource}
-                newsLoading={live.newsLoading}
+                news={news[live.key]?.articles}
+                newsSource={news[live.key]?.source}
+                newsLoading={news[live.key]?.loading}
                 onFollowUp={live.done ? (question) => void submit(question) : undefined}
               />
               {live.clarify && (

@@ -60,6 +60,17 @@ export interface DoneFrame {
   answer?: AnswerPayload;
   /** True when the turn ended in a question rather than an answer. */
   clarify?: boolean;
+  /**
+   * The rows this turn was stored as, so the page can fold it into the
+   * transcript at once — and rate, save or regenerate it — without a reload.
+   * Null when nothing was persisted (a stateless turn, or a database outage).
+   */
+  user_message_id?: number | null;
+  message_id?: number | null;
+  /** The `query_history` row an analysis wrote; null for a discussion. */
+  query_history_id?: number | null;
+  /** The query the system actually ran, when it differs from what was typed. */
+  effective_query?: string | null;
 }
 
 /**
