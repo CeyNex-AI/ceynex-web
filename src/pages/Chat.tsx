@@ -16,6 +16,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantTurn, UserTurn } from "../components/ChatMessage";
+import ClarifyCard from "../components/ClarifyCard";
+import FreshnessRibbon from "../components/FreshnessRibbon";
+import type { ClarifyPrompt } from "../components/ClarifyCard";
 import ConversationSidebar from "../components/ConversationSidebar";
 import { Button, ErrorBanner } from "../components/ui";
 import {
@@ -23,9 +26,14 @@ import {
   deleteConversation,
   fetchConversation,
   fetchConversations,
+  fetchTrace,
   patchConversation,
+  shareConversation,
 } from "../lib/chatApi";
-import { ChatStreamError, streamChat } from "../lib/streamChat";
+import { fetchNewsSearch } from "../lib/newsApi";
+import type { NewsArticle, NewsSource } from "../lib/newsApi";
+import { conversationToMarkdown } from "../lib/exportConversation";
+import { ChatStreamError, streamChat, streamClarifyAnswer } from "../lib/streamChat";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 import type {
@@ -50,7 +58,26 @@ interface LiveTurn {
   usage?: UsageSummary;
   mode?: string | null;
   error?: string;
+  /**
+   * The stream ended without its terminal frame. Held apart from `error`: the
+   * server never said the turn failed, so the honest words are "we stopped
+   * hearing", not "it failed" — and the answer may already have been produced
+   * and charged for.
+   */
+  dropped?: boolean;
+  /** The gate asked one question back instead of answering. Not a failure. */
+  clarify?: ClarifyPrompt;
   done: boolean;
+  /**
+   * Related coverage, fetched beside the turn rather than carried by it. News
+   * is not evidence (see NewsPanel) and is not persisted with the message, so
+   * a reloaded transcript shows none — deliberately: headlines chosen for
+   * today would be stale beside an analysis from last week, and presenting
+   * them as though they accompanied it would be a claim we cannot support.
+   */
+  news?: NewsArticle[] | null;
+  newsSource?: NewsSource | null;
+  newsLoading?: boolean;
 }
 
 export default function Chat() {
@@ -68,6 +95,27 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
 
   const abort = useRef<AbortController | null>(null);
+  const newsSeq = useRef(0);
+
+  /**
+   * Persisted traces, fetched on demand and keyed by `request_id`. A stored
+   * turn arrives from the transcript without its steps — they live in
+   * `chat_trace_event` and are a separate, sometimes large, read — so they are
+   * fetched only when a reader actually opens one. `null` means "in flight".
+   */
+  const [traces, setTraces] = useState<Record<string, TraceEvent[] | null>>({});
+
+  const loadTrace = useCallback(
+    (conversationId: number, requestId: string) => {
+      setTraces((current) => (requestId in current ? current : { ...current, [requestId]: null }));
+      fetchTrace(conversationId, requestId)
+        .then((events) => setTraces((current) => ({ ...current, [requestId]: events })))
+        // A trace that will not load is not worth an error banner beside a
+        // perfectly good answer; the row simply reports nothing recorded.
+        .catch(() => setTraces((current) => ({ ...current, [requestId]: [] })));
+    },
+    [],
+  );
   const bottom = useRef<HTMLDivElement | null>(null);
   const streaming = live !== null && !live.done;
 
@@ -121,6 +169,129 @@ export default function Chat() {
     setError(null);
   }
 
+  /**
+   * Fired beside a turn that actually runs the graph, never awaited before it —
+   * the same posture as `Query.tsx::handleSubmit`, whose comment explains why
+   * (the orchestrator takes seconds; news must neither queue behind it nor
+   * delay it). Failures are swallowed rather than shown: the red banner means
+   * "the turn failed", and a missing news panel is not that.
+   *
+   * `newsSeq` guards against a slow response for turn N landing after turn N+1
+   * has already started, the same way `Query.tsx` guards a re-submitted query.
+   */
+  function loadNews(asked: string) {
+    const seq = ++newsSeq.current;
+    setLive((current) => (current ? { ...current, newsLoading: true } : current));
+    fetchNewsSearch(asked)
+      .then((result) => {
+        if (seq !== newsSeq.current) return;
+        setLive((current) =>
+          current
+            ? { ...current, news: result.articles, newsSource: result.source, newsLoading: false }
+            : current,
+        );
+      })
+      .catch(() => {
+        if (seq !== newsSeq.current) return;
+        setLive((current) =>
+          current ? { ...current, news: [], newsSource: "unavailable", newsLoading: false } : current,
+        );
+      });
+  }
+
+  /**
+   * The handler set is identical for a fresh turn and for a resumed one — the
+   * clarify route streams the same frames — so it is built once rather than
+   * written twice and allowed to drift.
+   */
+  function handlers(asked: string) {
+    return {
+      onEvent: (event: TraceEvent) => {
+        if (event.kind === "turn" && event.mode === "analyse") {
+          loadNews(event.standalone_query || asked);
+        }
+        setLive((current) =>
+          current
+            ? {
+                ...current,
+                events: [...current.events, event],
+                mode: event.kind === "turn" ? event.mode : current.mode,
+              }
+            : current,
+        );
+      },
+      onError: (message: string) =>
+        setLive((current) => (current ? { ...current, error: message } : current)),
+      onClarify: (prompt: ClarifyPrompt) =>
+        setLive((current) => (current ? { ...current, clarify: prompt } : current)),
+      onDone: (frame: { answer?: AnswerPayload; usage?: UsageSummary }) =>
+        setLive((current) =>
+          current ? { ...current, answer: frame.answer, usage: frame.usage, done: true } : current,
+        ),
+      onDropped: () =>
+        setLive((current) => (current ? { ...current, dropped: true, done: true } : current)),
+    };
+  }
+
+  /** Answer the gate's question, or wave it past, and stream the real turn. */
+  async function resolveClarification(pendingId: number, answers: string[], skip: boolean) {
+    const asked = live?.question ?? "";
+    const controller = new AbortController();
+    abort.current = controller;
+    setLive((current) =>
+      current ? { ...current, clarify: undefined, done: false, error: undefined } : current,
+    );
+    try {
+      await streamClarifyAnswer(pendingId, { answers, skip }, handlers(asked), controller.signal);
+      if (activeId) void reloadConversations();
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      setError(
+        err instanceof ChatStreamError ? err.message : "Couldn't reach the chat service.",
+      );
+      setLive(null);
+    } finally {
+      abort.current = null;
+    }
+  }
+
+  const [shareLink, setShareLink] = useState<string | null>(null);
+
+  /** Markdown of the whole conversation plus an evidence appendix (§7). */
+  function exportMarkdown() {
+    const markdown = conversationToMarkdown(
+      conversations.find((c) => c.id === activeId)?.title ?? null,
+      messages,
+    );
+    const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ceynex-conversation-${activeId}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** Mint a read-only link, or copy the one already minted (§5). */
+  async function toggleShare() {
+    if (activeId === null) return;
+    if (shareLink) {
+      try {
+        await navigator.clipboard.writeText(shareLink);
+      } catch {
+        /* Clipboard is blocked in some contexts; the link is on screen anyway. */
+      }
+      return;
+    }
+    try {
+      const result = await shareConversation(activeId, true);
+      if (result.token) {
+        setShareLink(`${window.location.origin}/shared/${result.token}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create a link.");
+    }
+  }
+
   async function submit(asked: string) {
     if (!asked.trim() || streaming) return;
     setError(null);
@@ -145,29 +316,16 @@ export default function Chat() {
     abort.current = controller;
     setLive({ question: asked, events: [], done: false });
 
+    // A first turn always runs the graph, and the backend emits no `turn` frame
+    // for it (routes/chat.py only classifies against an existing transcript),
+    // so there is nothing to wait for. Later turns fire from the `turn` frame
+    // below, once it says the graph is actually running.
+    if (messages.length === 0) loadNews(asked);
+
     try {
       await streamChat(
         { query: asked, ...(conversationId ? { conversation_id: conversationId } : {}) },
-        {
-          onEvent: (event) =>
-            setLive((current) =>
-              current
-                ? {
-                    ...current,
-                    events: [...current.events, event],
-                    mode: event.kind === "turn" ? event.mode : current.mode,
-                  }
-                : current,
-            ),
-          onError: (message) =>
-            setLive((current) => (current ? { ...current, error: message } : current)),
-          onDone: (frame) =>
-            setLive((current) =>
-              current
-                ? { ...current, answer: frame.answer, usage: frame.usage, done: true }
-                : current,
-            ),
-        },
+        handlers(asked),
         controller.signal,
       );
       // The title is generated server-side after the first turn, so the sidebar
@@ -219,6 +377,24 @@ export default function Chat() {
       )}
 
       <div className="flex-1 min-w-0 flex flex-col gap-4">
+        {messages.length > 0 && activeId !== null && (
+          <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+            <FreshnessRibbon />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={exportMarkdown}>
+                Export
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => void toggleShare()}>
+                {shareLink ? "Copy link" : "Share"}
+              </Button>
+            </div>
+          </div>
+        )}
+        {shareLink && (
+          <p className="text-xs text-gray-500 break-all print:hidden">
+            Read-only link: {shareLink}
+          </p>
+        )}
         {messages.length === 0 && !live && (
           <div className="space-y-3">
             <h1 className="text-lg font-semibold text-gray-900">
@@ -228,6 +404,9 @@ export default function Chat() {
               Every figure is traced to the query that produced it. Open the steps beside an
               answer to see the Cypher, the dataset read and what the model cost.
             </p>
+            {/* Answers the first credibility question a reader has, before they
+                have asked anything. */}
+            <FreshnessRibbon />
             <ul className="flex flex-wrap gap-2">
               {EXAMPLES.map((example) => (
                 <li key={example}>
@@ -255,8 +434,18 @@ export default function Chat() {
                 key={message.seq}
                 graphKey={`${activeId}-${message.seq}`}
                 mode={message.mode}
-                events={[]}
+                events={message.request_id ? (traces[message.request_id] ?? []) : []}
                 running={false}
+                traceLoading={
+                  message.request_id ? traces[message.request_id] === null : false
+                }
+                onOpenTrace={
+                  message.request_id && activeId !== null
+                    ? () => loadTrace(activeId, message.request_id as string)
+                    : undefined
+                }
+                messageId={message.id ?? undefined}
+                onFollowUp={(question) => void submit(question)}
                 usage={message.usage ?? undefined}
                 answer={{
                   answer: message.content,
@@ -287,7 +476,39 @@ export default function Chat() {
                 usage={live.usage}
                 mode={live.mode}
                 error={live.error}
+                news={live.news}
+                newsSource={live.newsSource}
+                newsLoading={live.newsLoading}
+                onFollowUp={live.done ? (question) => void submit(question) : undefined}
               />
+              {live.clarify && (
+                <ClarifyCard
+                  prompt={live.clarify}
+                  busy={streaming}
+                  onAnswer={(answers) =>
+                    void resolveClarification(live.clarify!.pending_id, answers, false)
+                  }
+                  onSkip={() => void resolveClarification(live.clarify!.pending_id, [], true)}
+                />
+              )}
+              {live.dropped && (
+                <li className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3 flex flex-wrap items-center gap-3">
+                  <span>
+                    The connection dropped before this turn finished. It may have
+                    completed on the server — reload the conversation to check
+                    before asking again.
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      if (activeId !== null) void openConversation(activeId);
+                    }}
+                  >
+                    Reload conversation
+                  </Button>
+                </li>
+              )}
             </>
           )}
         </ol>

@@ -13,8 +13,14 @@
  * behind it.
  */
 
+import AnswerFeedback from "./AnswerFeedback";
+import CitedAnswer from "./CitedAnswer";
 import ConfidenceBadge from "./ConfidenceBadge";
+import ConfidenceBreakdown from "./ConfidenceBreakdown";
+import FollowUpChips from "./FollowUpChips";
+import type { NewsArticle, NewsSource } from "../lib/newsApi";
 import EvidencePanel from "./EvidencePanel";
+import NewsPanel from "./NewsPanel";
 import ForecastChart from "./ForecastChart";
 import KnowledgeGraphPanel from "./KnowledgeGraphPanel";
 import ReasoningTrace from "./ReasoningTrace";
@@ -51,6 +57,13 @@ export function AssistantTurn({
   mode,
   graphKey,
   error,
+  news,
+  newsSource,
+  newsLoading,
+  onOpenTrace,
+  traceLoading,
+  messageId,
+  onFollowUp,
 }: {
   answer?: AnswerPayload;
   events: TraceEvent[];
@@ -60,6 +73,19 @@ export function AssistantTurn({
   /** Changes per answer — KnowledgeGraphPanel needs a fresh mount each time. */
   graphKey: string | number;
   error?: string;
+  /**
+   * Related coverage, never evidence. Absent on a stored turn and on a
+   * `discuss` turn — see the `news` field on Chat.tsx's LiveTurn for why.
+   */
+  news?: NewsArticle[] | null;
+  newsSource?: NewsSource | null;
+  newsLoading?: boolean;
+  /** Fetches this turn's persisted trace the first time it is opened. */
+  onOpenTrace?: () => void;
+  traceLoading?: boolean;
+  /** Present only on a stored turn — a rating needs a row to attach to. */
+  messageId?: number;
+  onFollowUp?: (question: string) => void;
 }) {
   return (
     <li className="space-y-3">
@@ -67,6 +93,8 @@ export function AssistantTurn({
         events={events}
         running={running}
         elapsedMs={answer?.elapsed_ms ?? undefined}
+        onOpen={onOpenTrace}
+        loading={traceLoading}
       />
 
       {error && (
@@ -83,7 +111,10 @@ export function AssistantTurn({
           <div className="flex-1 min-w-0 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
               {answer.confidence !== null && answer.confidence !== undefined && (
-                <ConfidenceBadge score={answer.confidence} />
+                <ConfidenceBadge
+                  score={answer.confidence}
+                  band={answer.confidence_band ?? undefined}
+                />
               )}
               {mode === "discuss" && (
                 <Pill tone="gray">
@@ -98,7 +129,7 @@ export function AssistantTurn({
               )}
             </div>
 
-            <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{answer.answer}</p>
+            <CitedAnswer text={answer.answer} evidence={answer.evidence} />
 
             {answer.unanswered.length > 0 && (
               <div className="text-sm text-gray-500">
@@ -111,10 +142,28 @@ export function AssistantTurn({
             {answer.forecast && answer.forecast.length > 0 && (
               <ForecastChart data={answer.forecast} />
             )}
+            {answer.confidence_breakdown && (
+              <ConfidenceBreakdown breakdown={answer.confidence_breakdown} />
+            )}
+            {onFollowUp && !answer.degraded && (
+              <FollowUpChips answer={answer} onPick={onFollowUp} />
+            )}
             {usage && <UsageFooter usage={usage} />}
+            {messageId !== undefined && <AnswerFeedback messageId={messageId} />}
           </div>
 
-          {answer.evidence.length > 0 && <EvidencePanel evidence={answer.evidence} />}
+          {(answer.evidence.length > 0 || newsSource) && (
+            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+              {answer.evidence.length > 0 && <EvidencePanel evidence={answer.evidence} />}
+              {newsSource && (
+                <NewsPanel
+                  articles={news ?? null}
+                  loading={newsLoading ?? false}
+                  source={newsSource}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </li>
