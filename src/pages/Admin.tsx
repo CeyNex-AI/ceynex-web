@@ -17,6 +17,7 @@ import {
 import { ROLE_LABELS } from "../lib/roles";
 import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
+import UsagePanel from "../components/UsagePanel";
 import usePageTitle from "../lib/usePageTitle";
 
 interface HealthResponse {
@@ -469,6 +470,13 @@ export default function Admin() {
         <ModelsCard />
         <PipelineCard />
         <DQFlagsCard />
+
+          <section aria-labelledby="admin-usage">
+            <h2 id="admin-usage" className="text-sm font-semibold text-gray-900 mb-3">
+              Model usage across all users
+            </h2>
+            <UsagePanel scope="all" />
+          </section>
       </div>
     </div>
   );

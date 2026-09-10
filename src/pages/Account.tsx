@@ -12,6 +12,8 @@ import {
 } from "../lib/accountApi";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
+import InstructionsEditor from "../components/InstructionsEditor";
+import UsagePanel from "../components/UsagePanel";
 import usePageTitle from "../lib/usePageTitle";
 
 const PREFERENCE_LABELS: Record<keyof NotificationPreferences, string> = {
@@ -110,7 +112,7 @@ export default function Account() {
       <div className="max-w-md mx-auto space-y-6">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 mb-1">Account</h1>
-          <p className="text-sm text-gray-500">Your CeyNex session, preferences, and API keys.</p>
+          <p className="text-sm text-gray-500">Your CeyNex session, how answers are written, usage and limits, and API keys.</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
@@ -177,6 +179,13 @@ export default function Account() {
               </div>
             </form>
           )}
+        </div>
+
+        <InstructionsEditor />
+
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-gray-900">Usage and limits</h2>
+          <UsagePanel />
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">

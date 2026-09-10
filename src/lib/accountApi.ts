@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiFetch";
 import { getToken } from "./tokenStorage";
 
 /**
@@ -77,4 +78,64 @@ export async function revokeApiKey(id: number): Promise<void> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`Couldn't revoke that key (${res.status}).`);
+}
+
+// --- usage and cost (backend deviation D15) ---------------------------------
+
+export interface UsageRollup {
+  key: string;
+  calls: number;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+}
+
+export interface UsageSummary {
+  days: number;
+  scope: "user" | "all";
+  by_day: UsageRollup[];
+  by_role: UsageRollup[];
+  total_cost_usd: number;
+  total_calls: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+}
+
+export interface UsageLimits {
+  limits: UsageRollup[];
+  daily_spend_cap_usd: number;
+  spent_today_usd: number;
+  /** The cap is per uvicorn worker, so real spend can reach worker_count times it. */
+  cap_is_per_worker: boolean;
+  worker_count: number;
+}
+
+export interface UserInstruction {
+  content: string;
+  enabled: boolean;
+  max_chars: number;
+}
+
+export function fetchUsage(days = 30, scope: "user" | "all" = "user"): Promise<UsageSummary> {
+  const path = scope === "all" ? "/api/usage/all" : "/api/usage/summary";
+  return apiFetch<UsageSummary>(`${path}?days=${days}`, { auth: true });
+}
+
+export function fetchUsageLimits(): Promise<UsageLimits> {
+  return apiFetch<UsageLimits>("/api/usage/limits", { auth: true });
+}
+
+export function fetchInstructions(): Promise<UserInstruction> {
+  return apiFetch<UserInstruction>("/api/account/instructions", { auth: true });
+}
+
+export function saveInstructions(
+  content: string,
+  enabled: boolean,
+): Promise<UserInstruction> {
+  return apiFetch<UserInstruction>("/api/account/instructions", {
+    method: "PUT",
+    auth: true,
+    body: { content, enabled },
+  });
 }
