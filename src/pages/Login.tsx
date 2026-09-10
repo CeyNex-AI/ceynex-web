@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useLocation, type Location } from "react-router-dom";
+import { Link, Navigate, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
 
 const FEATURES = [
   {
@@ -151,31 +150,12 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-gray-400">
-            Demo accounts, password <span className="font-mono">{DEMO_PASSWORD}</span> for all.
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-teal-700 hover:text-teal-800 font-medium">
+              Sign up
+            </Link>
           </p>
-
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 text-center">
-              Try a demo role
-            </p>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {Object.entries(DEMO_ACCOUNTS).map(([demoEmail, role]) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  onClick={() => {
-                    setEmail(demoEmail);
-                    setPassword(DEMO_PASSWORD);
-                    setError(null);
-                  }}
-                  className="cx-chip text-xs px-3 py-1"
-                >
-                  {ROLE_LABELS[role]}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

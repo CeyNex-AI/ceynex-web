@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AuthContext } from "./authContext";
-import { fetchMe, loginApi } from "./authApi";
+import { fetchMe, loginApi, signupApi } from "./authApi";
 import type { Role } from "./roles";
 import { clearToken, getToken, setToken } from "./tokenStorage";
 
@@ -49,6 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(result.role as Role);
   }
 
+  // Signup returns the same shape as login and the backend logs the new
+  // account straight in, so this is login() with a different first call --
+  // no separate "now sign in" step.
+  async function signup(email: string, password: string) {
+    const result = await signupApi(email, password);
+    setToken(result.token);
+    setUserId(result.email);
+    setRole(result.role as Role);
+  }
+
   function logout() {
     clearToken();
     setUserId(null);
@@ -56,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ userId, role, loading, login, logout }}>
+    <AuthContext.Provider value={{ userId, role, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

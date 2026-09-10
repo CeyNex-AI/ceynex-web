@@ -133,3 +133,53 @@ export async function fetchLLMStatus(): Promise<LLMStatus> {
   const res = await fetch("/api/admin/llm/status", { headers: authHeaders() });
   return unwrap<LLMStatus>(res, "Loading LLM status");
 }
+
+// --- user accounts + roles (RBAC, SRS 3.5.4) --------------------------
+
+export interface UserAdminItem {
+  id: number;
+  email: string;
+  role: string;
+  created_at: string;
+  disabled: boolean;
+}
+
+export async function fetchUsers(): Promise<UserAdminItem[]> {
+  const res = await fetch("/api/admin/users", { headers: authHeaders() });
+  const data = await unwrap<{ users: UserAdminItem[] }>(res, "Loading users");
+  return data.users;
+}
+
+/** The backend translates a duplicate email to 409 and a bad role / short
+ * password to 422 -- surfaced as readable messages rather than a bare code. */
+export async function createUser(email: string, password: string, role: string): Promise<UserAdminItem> {
+  const res = await fetch("/api/admin/users", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ email, password, role }),
+  });
+  if (res.status === 409) throw new Error("An account with that email already exists.");
+  if (res.status === 422) throw new Error("Check the email, role, and that the password is 8+ characters.");
+  return unwrap<UserAdminItem>(res, "Creating user");
+}
+
+export async function setUserRole(id: number, role: string): Promise<UserAdminItem> {
+  const res = await fetch(`/api/admin/users/${id}/role`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ role }),
+  });
+  if (res.status === 409) throw new Error("That would remove the last admin.");
+  if (res.status === 404) throw new Error("That user no longer exists.");
+  return unwrap<UserAdminItem>(res, "Changing role");
+}
+
+export async function setUserDisabled(id: number, disabled: boolean): Promise<UserAdminItem> {
+  const res = await fetch(`/api/admin/users/${id}/${disabled ? "disable" : "enable"}`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (res.status === 409) throw new Error("That would disable the last admin.");
+  if (res.status === 404) throw new Error("That user no longer exists.");
+  return unwrap<UserAdminItem>(res, disabled ? "Disabling user" : "Enabling user");
+}
