@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
+  type AuditLogItem,
   type DQFlagItem,
   type LLMStatus,
   type ModelSummary,
@@ -8,6 +9,7 @@ import {
   type ProviderStatusItem,
   type UserAdminItem,
   createUser,
+  fetchAuditLog,
   fetchDQFlags,
   fetchLLMStatus,
   fetchModels,
@@ -677,6 +679,75 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
   );
 }
 
+/** SRS 3.4.7 — the trail every admin mutation already writes (RBAC changes,
+ * retrains, ingests, DQ-flag resolves), surfaced instead of only ever queried
+ * by hand. Read-only, newest first. */
+const ACTION_LABELS: Record<string, string> = {
+  create_user: "created user",
+  set_user_role: "changed role",
+  set_user_password: "reset password",
+  disable_user: "disabled user",
+  enable_user: "enabled user",
+  retrain: "retrained model",
+  pipeline_ingest: "ran ingest",
+  resolve_dq_flag: "resolved DQ flag",
+};
+
+function AuditLogCard() {
+  const [entries, setEntries] = useState<AuditLogItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetchAuditLog()
+      .then(setEntries)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load the audit log."));
+  }, []);
+
+  const shown = entries && (expanded ? entries : entries.slice(0, 8));
+
+  return (
+    <Card title="Admin activity" subtitle="Every privileged action, newest first (SRS 3.4.7).">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+      {!entries && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {entries && entries.length === 0 && (
+        <p className="text-sm text-gray-400">Nothing recorded yet.</p>
+      )}
+      {shown && shown.length > 0 && (
+        <ul className="space-y-1.5">
+          {shown.map((e) => (
+            <li
+              key={e.id}
+              className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+            >
+              <span className="min-w-0 truncate text-gray-800">
+                <span className="font-medium">{e.actor_email}</span>{" "}
+                <span className="text-gray-500">{ACTION_LABELS[e.action] ?? e.action}</span>
+                {e.target && <span className="text-gray-400"> · {e.target}</span>}
+              </span>
+              <span className="text-xs text-gray-400 shrink-0">{timeAgo(e.logged_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {entries && entries.length > 8 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-2 text-xs font-medium text-teal-700 hover:text-teal-800"
+        >
+          {expanded ? "Show fewer" : `Show all ${entries.length}`}
+        </button>
+      )}
+    </Card>
+  );
+}
+
 export default function Admin() {
   usePageTitle("Admin");
   const { role, userId } = useAuth();
@@ -731,6 +802,8 @@ export default function Admin() {
         </div>
 
         <UsersCard currentEmail={userId} />
+
+        <AuditLogCard />
 
         <AppearanceCard />
 
