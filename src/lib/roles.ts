@@ -10,6 +10,10 @@ export type Role = "policymaker" | "admin" | "researcher" | "exporter";
  */
 export const ALL_ROLES: Role[] = ["researcher", "exporter", "policymaker", "admin"];
 
+/** Roles a new signup may pick — everything except `admin`, which is only ever
+ * created by an existing admin (mirrors ceynex-core's `users.SIGNUP_ROLES`). */
+export const SIGNUP_ROLES: Role[] = ["researcher", "exporter", "policymaker"];
+
 export const ROLE_LABELS: Record<Role, string> = {
   policymaker: "Policymaker",
   admin: "Admin",

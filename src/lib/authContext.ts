@@ -14,7 +14,7 @@ export interface AuthContextValue {
    */
   sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, role?: string) => Promise<void>;
   /** Change the signed-in account's email; swaps in the fresh token. */
   changeEmail: (currentPassword: string, newEmail: string) => Promise<void>;
   /** Delete the signed-in account, then sign out locally. */
