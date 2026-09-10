@@ -10,7 +10,26 @@
  * API response shape moves again.
  */
 
-export type SourceId = "UN_COMTRADE" | "WITS" | "FAOSTAT" | "CBSL" | "JAAF" | "EDB" | "KG" | "MODEL";
+/**
+ * Mirrors `SourceId` in ceynex-contracts, which is a plain `str` there so a new
+ * source needs no contract change — but a closed union here, so the frontend
+ * still fails a type-check rather than silently rendering an unknown chip.
+ *
+ * `POLICY` was missing: the backend has emitted it since policy retrieval (D10)
+ * shipped, via `agents/common.py::evidence_from_policy`. `WEB` is reserved for
+ * the general web search (D14).
+ */
+export type SourceId =
+  | "UN_COMTRADE"
+  | "WITS"
+  | "FAOSTAT"
+  | "CBSL"
+  | "JAAF"
+  | "EDB"
+  | "KG"
+  | "MODEL"
+  | "POLICY"
+  | "WEB";
 
 export interface Evidence {
   source_id: SourceId;
