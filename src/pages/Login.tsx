@@ -24,7 +24,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { userId, loading, login } = useAuth();
+  const { userId, loading, login, sessionExpired } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/query";
 
@@ -103,6 +103,12 @@ export default function Login() {
               Multi-agent trade intelligence for Sri Lanka's export economy
             </p>
           </div>
+
+          {sessionExpired && !error && (
+            <p role="status" className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+              You were signed out — your session ended or your account access changed. Sign in again to continue.
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="cx-panel p-6 space-y-4">
             <div>

@@ -106,3 +106,42 @@ export async function changePassword(
   if (res.status === 422) throw new Error("New password must be different and at least 8 characters.");
   throw new Error(`Couldn't change password (${res.status}).`);
 }
+
+/**
+ * POST /api/account/email. Current password required (403). The change
+ * invalidates every session server-side, so the response is a fresh
+ * {token, email, role}. auth.tsx swaps it in — don't call this directly, use
+ * `useAuth().changeEmail`.
+ */
+export async function changeEmailApi(
+  currentPassword: string,
+  newEmail: string
+): Promise<{ token: string; email: string; role: string }> {
+  const res = await fetch("/api/account/email", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_email: newEmail }),
+  });
+  if (res.ok) return res.json();
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 409) throw new Error("That email is already in use.");
+  if (res.status === 422) throw new Error("That doesn't look like a valid email.");
+  throw new Error(`Couldn't change email (${res.status}).`);
+}
+
+/**
+ * DELETE /api/account. Current password required (403). Removes the account
+ * and its history / API keys / preferences. 409 if you're the last admin.
+ * Use `useAuth().deleteAccount`, which signs out afterwards.
+ */
+export async function deleteAccountApi(currentPassword: string): Promise<void> {
+  const res = await fetch("/api/account", {
+    method: "DELETE",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword }),
+  });
+  if (res.ok) return;
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 409) throw new Error("You're the last admin — make someone else an admin first.");
+  throw new Error(`Couldn't delete the account (${res.status}).`);
+}
