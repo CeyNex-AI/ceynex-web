@@ -21,7 +21,8 @@ import type { ChatMessage } from "../types/chat";
 interface Shared {
   title: string | null;
   created_at: string;
-  messages: ChatMessage[];
+  /** Each question's latest answer; `regenerated` marks one that replaced another. */
+  messages: (ChatMessage & { regenerated?: boolean })[];
 }
 
 export default function SharedConversation() {
@@ -61,7 +62,11 @@ export default function SharedConversation() {
       <ol className="space-y-6">
         {data.messages.map((message) =>
           message.role === "user" ? (
-            <UserTurn key={message.seq} content={message.content} />
+            <UserTurn
+              key={message.seq}
+              content={message.content}
+              interpretedAs={message.effective_query}
+            />
           ) : (
             <AssistantTurn
               key={message.seq}
@@ -69,15 +74,25 @@ export default function SharedConversation() {
               mode={message.mode}
               events={[]}
               running={false}
+              // The server sends each question's latest answer only; saying when
+              // it replaced an earlier one keeps the copy honest about what the
+              // system did.
+              notice={
+                message.regenerated
+                  ? "This answer was regenerated; the earlier version is not shown here."
+                  : undefined
+              }
               answer={{
                 answer: message.content,
                 confidence: message.confidence ?? null,
                 confidence_band: message.confidence_band ?? null,
+                confidence_breakdown: message.confidence_breakdown ?? null,
                 agents_used: message.agents_used,
                 evidence: message.evidence,
                 forecast: message.forecast,
                 graph: message.graph,
                 degraded: message.degraded ?? false,
+                grounded: message.grounded ?? undefined,
                 route: message.route,
                 sectors: message.sectors,
                 unanswered: message.unanswered,

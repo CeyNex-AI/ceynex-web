@@ -87,3 +87,21 @@ describe("nextSeq", () => {
     expect(nextSeq(gappy)).toBe(6);
   });
 });
+
+describe("foldTurn for a regenerate", () => {
+  it("adds only the new answer, linked to the one it replaces", () => {
+    const existing = foldTurn({ key: "t0", question: "q" }, DONE, []);
+    const rows = foldTurn(
+      { key: "t1", question: "", mode: "analyse" },
+      { ...DONE, message_id: 13, user_message_id: null, regenerated_from: 12 },
+      existing,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 13, role: "assistant", regenerated_from: 12, seq: 3 });
+  });
+
+  it("carries a withdrawn draft's reason onto the answer that replaced it", () => {
+    const [, assistant] = foldTurn({ ...TURN, withdrawn: "ungrounded" }, DONE, []);
+    expect(assistant.draft_withdrawn).toBe("ungrounded");
+  });
+});

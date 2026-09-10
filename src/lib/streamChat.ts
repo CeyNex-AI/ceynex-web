@@ -79,6 +79,8 @@ export interface DoneFrame {
   query_history_id?: number | null;
   /** The query the system actually ran, when it differs from what was typed. */
   effective_query?: string | null;
+  /** A regenerate: the id of the answer this one replaces (kept, not overwritten). */
+  regenerated_from?: number | null;
 }
 
 /**
@@ -125,6 +127,18 @@ export async function streamChat(
   signal?: AbortSignal,
 ): Promise<void> {
   return streamTo("/api/chat/stream", body, handlers, signal);
+}
+
+/**
+ * A fresh answer to the conversation's latest question, streamed like any turn.
+ * Only the latest answer can be regenerated; the server says 409 otherwise.
+ */
+export async function streamRegenerate(
+  messageId: number,
+  handlers: StreamHandlers,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamTo(`/api/chat/messages/${messageId}/regenerate`, {}, handlers, signal);
 }
 
 /** Ask the server to stop a turn. Resolves to whether there was one to stop. */

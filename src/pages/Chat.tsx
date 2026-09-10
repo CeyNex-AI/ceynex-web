@@ -14,7 +14,7 @@
  * not a second entry point.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AssistantTurn, UserTurn } from "../components/ChatMessage";
 import ClarifyCard from "../components/ClarifyCard";
 import FreshnessRibbon from "../components/FreshnessRibbon";
@@ -33,9 +33,16 @@ import {
 import { fetchNewsSearch } from "../lib/newsApi";
 import type { NewsArticle, NewsSource } from "../lib/newsApi";
 import { conversationToMarkdown } from "../lib/exportConversation";
-import { ChatStreamError, cancelTurn, streamChat, streamClarifyAnswer } from "../lib/streamChat";
+import {
+  ChatStreamError,
+  cancelTurn,
+  streamChat,
+  streamClarifyAnswer,
+  streamRegenerate,
+} from "../lib/streamChat";
 import type { DoneFrame } from "../lib/streamChat";
 import { foldTurn } from "../lib/transcript";
+import { groupVersions, type TranscriptRow } from "../lib/versions";
 import type { FinishedTurn } from "../lib/transcript";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
@@ -76,6 +83,12 @@ interface LiveTurn {
   stopped?: boolean;
   /** The connection dropped and a resume is under way. */
   reconnecting?: { attempt: number; of: number } | null;
+  /** The answer so far — whole, grounded sentences as the server released them. */
+  draft?: string;
+  /** A draft was withdrawn, and why ("ungrounded" | "degraded"). */
+  withdrawn?: string | null;
+  /** A regenerate: the id of the answer being replaced, hidden while it streams. */
+  regenerating?: number | null;
   done: boolean;
 }
 
@@ -118,6 +131,12 @@ export default function Chat() {
 
   const abort = useRef<AbortController | null>(null);
   const [news, setNews] = useState<Record<string, TurnNews>>({});
+  /**
+   * One polite announcement for a screen reader when something happens to the
+   * answer — it is ready, or a draft was withdrawn — rather than a live region
+   * over the growing draft, which would re-read it sentence by sentence.
+   */
+  const [announcement, setAnnouncement] = useState("");
   /**
    * The turn being streamed, accumulated outside React state so the `done`
    * handler can fold it into the transcript in one step. Kept in a ref rather
@@ -242,6 +261,28 @@ export default function Chat() {
       onEvent: (event: TraceEvent) => {
         const turn = inProgress.current;
         if (!turn) return;
+        if (event.kind === "answer_delta") {
+          // The answer itself, not a step: it goes to the draft, never the trace.
+          const text = event.text ?? "";
+          setLive((current) =>
+            current ? { ...current, draft: (current.draft ?? "") + text } : current,
+          );
+          return;
+        }
+        if (event.kind === "answer_reset") {
+          // A retry clears the draft quietly — the trace row says why. A
+          // withdrawal is told to the reader, beside the answer that replaces it.
+          const reason = event.reason === "retry" ? null : (event.reason ?? "ungrounded");
+          if (reason) {
+            turn.withdrawn = reason;
+            setAnnouncement("A draft of the answer was withdrawn.");
+          }
+          setLive((current) =>
+            current
+              ? { ...current, draft: "", withdrawn: reason ?? current.withdrawn ?? null }
+              : current,
+          );
+        }
         if (event.kind === "start" && typeof event.request_id === "string") {
           turn.requestId = event.request_id;
         }
@@ -268,6 +309,7 @@ export default function Chat() {
         // question starts, and can be rated, saved and exported straight away.
         if (turn && frame.answer && !frame.failed && !frame.clarify) {
           setMessages((current) => [...current, ...foldTurn(turn, frame, current)]);
+          setAnnouncement("Answer ready.");
           if (frame.request_id) {
             const requestId = frame.request_id;
             setTraces((current) => ({ ...current, [requestId]: turn.events }));
@@ -421,6 +463,35 @@ export default function Chat() {
    * stream ends with its own `done` frame. Before the turn has a request id —
    * or if the request cannot be sent — dropping the connection is all we have.
    */
+  /**
+   * A fresh answer to the conversation's latest question. Streams like any
+   * turn, in the latest answer's place; the answer it replaces is kept and
+   * reachable through the version switcher once the new one arrives.
+   */
+  async function regenerate(message: ChatMessage) {
+    if (streaming || message.id == null) return;
+    setError(null);
+    const controller = new AbortController();
+    abort.current = controller;
+    const key = `turn-${++turnCounter.current}`;
+    inProgress.current = {
+      key,
+      question: "",
+      events: [],
+      mode: message.mode === "discuss" ? "discuss" : "analyse",
+    };
+    setLive({ key, question: "", events: [], done: false, regenerating: message.id });
+    try {
+      await streamRegenerate(message.id, handlers(), controller.signal);
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      setError(err instanceof ChatStreamError ? err.message : "Could not regenerate that answer.");
+      setLive(null);
+    } finally {
+      abort.current = null;
+    }
+  }
+
   async function stop() {
     const requestId = inProgress.current?.requestId;
     if (requestId) {
@@ -434,6 +505,8 @@ export default function Chat() {
     abort.current?.abort();
     setLive((current) => (current ? { ...current, stopped: true, done: true } : current));
   }
+
+  const rows = groupVersions(messages);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -510,67 +583,92 @@ export default function Chat() {
         )}
 
         <ol className="space-y-6">
-          {messages.map((message) =>
-            message.role === "user" ? (
-              <UserTurn
-                key={message.seq}
-                content={message.content}
-                interpretedAs={message.effective_query}
+          {rows.map((row, position) => {
+            if (row.message.role === "user") {
+              return (
+                <UserTurn
+                  key={row.key}
+                  content={row.message.content}
+                  interpretedAs={row.message.effective_query}
+                />
+              );
+            }
+            // While its replacement streams, the answer being regenerated steps
+            // aside; it comes back as the previous version once the new one lands.
+            if (live?.regenerating != null && row.message.id === live.regenerating) return null;
+            const isLatest = position === rows.length - 1;
+            return (
+              <VersionedTurn
+                key={`${row.key}:${row.versions?.length ?? 1}`}
+                row={row}
+                render={(message, versions) => (
+                  <AssistantTurn
+                    graphKey={`${activeId}-${message.id ?? message.seq}`}
+                    mode={message.mode}
+                    events={message.request_id ? (traces[message.request_id] ?? []) : []}
+                    running={false}
+                    traceLoading={
+                      message.request_id ? traces[message.request_id] === null : false
+                    }
+                    onOpenTrace={
+                      message.request_id && activeId !== null
+                        ? () => loadTrace(activeId, message.request_id as string)
+                        : undefined
+                    }
+                    messageId={message.id ?? undefined}
+                    onFollowUp={(question) => void submit(question)}
+                    usage={message.usage ?? undefined}
+                    queryHistoryId={message.query_history_id}
+                    saved={message.saved}
+                    withdrawn={message.draft_withdrawn}
+                    versions={versions}
+                    onRegenerate={
+                      // The latest answer only, shown as its latest version, once
+                      // stored — the server refuses anything else, so offering it
+                      // would promise something it will not do.
+                      isLatest && !streaming && message.id != null && message === row.message
+                        ? () => void regenerate(message)
+                        : undefined
+                    }
+                    news={message.client_key ? news[message.client_key]?.articles : undefined}
+                    newsSource={message.client_key ? news[message.client_key]?.source : undefined}
+                    newsLoading={message.client_key ? news[message.client_key]?.loading : undefined}
+                    answer={{
+                      answer: message.content,
+                      confidence: message.confidence ?? null,
+                      confidence_band: message.confidence_band ?? null,
+                      confidence_breakdown: message.confidence_breakdown ?? null,
+                      agents_used: message.agents_used,
+                      evidence: message.evidence,
+                      forecast: message.forecast,
+                      graph: message.graph,
+                      degraded: message.degraded ?? false,
+                      grounded: message.grounded ?? undefined,
+                      route: message.route,
+                      sectors: message.sectors,
+                      unanswered: message.unanswered,
+                      elapsed_ms: message.elapsed_ms,
+                    }}
+                  />
+                )}
               />
-            ) : (
-              <AssistantTurn
-                key={message.seq}
-                graphKey={`${activeId}-${message.seq}`}
-                mode={message.mode}
-                events={message.request_id ? (traces[message.request_id] ?? []) : []}
-                running={false}
-                traceLoading={
-                  message.request_id ? traces[message.request_id] === null : false
-                }
-                onOpenTrace={
-                  message.request_id && activeId !== null
-                    ? () => loadTrace(activeId, message.request_id as string)
-                    : undefined
-                }
-                messageId={message.id ?? undefined}
-                onFollowUp={(question) => void submit(question)}
-                usage={message.usage ?? undefined}
-                queryHistoryId={message.query_history_id}
-                saved={message.saved}
-                news={message.client_key ? news[message.client_key]?.articles : undefined}
-                newsSource={message.client_key ? news[message.client_key]?.source : undefined}
-                newsLoading={message.client_key ? news[message.client_key]?.loading : undefined}
-                answer={{
-                  answer: message.content,
-                  confidence: message.confidence ?? null,
-                  confidence_band: message.confidence_band ?? null,
-                  confidence_breakdown: message.confidence_breakdown ?? null,
-                  agents_used: message.agents_used,
-                  evidence: message.evidence,
-                  forecast: message.forecast,
-                  graph: message.graph,
-                  degraded: message.degraded ?? false,
-                  grounded: message.grounded ?? undefined,
-                  route: message.route,
-                  sectors: message.sectors,
-                  unanswered: message.unanswered,
-                  elapsed_ms: message.elapsed_ms,
-                }}
-              />
-            ),
-          )}
+            );
+          })}
 
           {live && (
             <>
-              <UserTurn content={live.question} />
+              {/* A regenerate answers the question already on screen. */}
+              {live.regenerating == null && <UserTurn content={live.question} />}
               <AssistantTurn
-                graphKey={`live-${live.events.length}`}
+                graphKey={`live-${live.key}`}
                 events={live.events}
                 running={!live.done}
                 answer={live.answer}
                 usage={live.usage}
                 mode={live.mode}
                 error={live.error}
+                draft={live.draft}
+                withdrawn={live.withdrawn}
                 news={news[live.key]?.articles}
                 newsSource={news[live.key]?.source}
                 newsLoading={news[live.key]?.loading}
@@ -621,6 +719,9 @@ export default function Chat() {
             </>
           )}
         </ol>
+        <p aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
         <div ref={bottom} />
 
         {error && <ErrorBanner>{error}</ErrorBanner>}
@@ -657,5 +758,34 @@ export default function Chat() {
         </form>
       </div>
     </div>
+  );
+}
+
+/**
+ * One answer with its versions: the latest shown, the others a click away.
+ *
+ * Keyed by its chain and version count, so when a regenerate adds a version the
+ * switcher resets to the new, latest answer — the one the reader just asked for.
+ */
+function VersionedTurn({
+  row,
+  render,
+}: {
+  row: TranscriptRow;
+  render: (
+    message: ChatMessage,
+    versions?: { index: number; count: number; onSelect: (index: number) => void },
+  ) => ReactNode;
+}) {
+  const versions = row.versions ?? [row.message];
+  const [index, setIndex] = useState(versions.length - 1);
+  const shown = versions[Math.min(index, versions.length - 1)];
+  return (
+    <>
+      {render(
+        shown,
+        versions.length > 1 ? { index, count: versions.length, onSelect: setIndex } : undefined,
+      )}
+    </>
   );
 }

@@ -27,7 +27,7 @@ import NewsPanel from "./NewsPanel";
 import ForecastChart from "./ForecastChart";
 import KnowledgeGraphPanel from "./KnowledgeGraphPanel";
 import ReasoningTrace from "./ReasoningTrace";
-import { Pill } from "./ui";
+import { Button, Pill } from "./ui";
 import type { AnswerPayload, TraceEvent, UsageSummary } from "../types/chat";
 
 export function UserTurn({
@@ -119,6 +119,67 @@ function UsageFooter({ usage }: { usage: UsageSummary }) {
   );
 }
 
+const WITHDRAWN_TEXT: Record<string, string> = {
+  ungrounded:
+    "A first draft was withdrawn because it stated a figure no finding supports. " +
+    "What is shown is the plain composition of the findings.",
+  degraded:
+    "The language model stopped partway, so its draft was withdrawn. What is shown is " +
+    "the plain composition of the findings.",
+};
+
+/** Why the text the reader watched arrive was taken away. Icon and words. */
+function WithdrawnNote({ reason }: { reason: string }) {
+  const text = WITHDRAWN_TEXT[reason];
+  if (!text) return null;
+  return (
+    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 flex gap-2">
+      <span aria-hidden="true">↺</span>
+      <span>{text}</span>
+    </p>
+  );
+}
+
+/** "‹ 2 of 3 ›" between an answer's versions. */
+function VersionSwitcher({
+  index,
+  count,
+  onSelect,
+}: {
+  index: number;
+  count: number;
+  onSelect: (index: number) => void;
+}) {
+  const button =
+    "px-1.5 py-0.5 rounded-md text-gray-600 hover:bg-gray-100 disabled:text-gray-300 " +
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600";
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-gray-500 print:hidden">
+      <button
+        type="button"
+        className={button}
+        disabled={index === 0}
+        onClick={() => onSelect(index - 1)}
+        aria-label="Previous version of this answer"
+      >
+        ‹
+      </button>
+      <span aria-live="polite">
+        Version {index + 1} of {count}
+      </span>
+      <button
+        type="button"
+        className={button}
+        disabled={index === count - 1}
+        onClick={() => onSelect(index + 1)}
+        aria-label="Next version of this answer"
+      >
+        ›
+      </button>
+    </span>
+  );
+}
+
 export function AssistantTurn({
   answer,
   events,
@@ -136,6 +197,11 @@ export function AssistantTurn({
   onFollowUp,
   queryHistoryId,
   saved,
+  draft,
+  withdrawn,
+  versions,
+  onRegenerate,
+  notice,
 }: {
   answer?: AnswerPayload;
   events: TraceEvent[];
@@ -161,6 +227,20 @@ export function AssistantTurn({
   /** The `query_history` row an analysis wrote. Absent on a discussion. */
   queryHistoryId?: number | null;
   saved?: boolean;
+  /**
+   * The answer so far, while it streams — whole sentences only, each one
+   * checked against the findings before it was sent (backend
+   * `orchestrator/answer_stream.py`). Replaced by the answer when it arrives.
+   */
+  draft?: string;
+  /** A draft was withdrawn before the answer arrived, and why. */
+  withdrawn?: string | null;
+  /** Several answers to this question exist; which one is shown. */
+  versions?: { index: number; count: number; onSelect: (index: number) => void };
+  /** Offered on the conversation's latest answer only. */
+  onRegenerate?: () => void;
+  /** One line of context above the answer — e.g. that it was regenerated. */
+  notice?: string;
 }) {
   // Which evidence entry a `[n]` citation just pointed at — shown with a ring,
   // and cleared shortly after so the panel does not keep a stale highlight.
@@ -182,6 +262,7 @@ export function AssistantTurn({
 
   return (
     <li className="space-y-3">
+      {notice && <p className="text-xs text-gray-500">{notice}</p>}
       <ReasoningTrace
         events={events}
         running={running}
@@ -198,6 +279,26 @@ export function AssistantTurn({
           {error}
         </p>
       )}
+
+      {/* Plain text while it streams: no citation links until the answer is
+          whole, because a `[n]` is only checked against the final evidence.
+          Not a live region — a screen reader would re-read every sentence as
+          the paragraph grows; the page announces "Answer ready" once instead. */}
+      {!answer && draft && (
+        <p
+          aria-busy={running}
+          className="text-gray-800 whitespace-pre-wrap leading-relaxed"
+        >
+          {draft}
+          {running && (
+            <span className="motion-safe:animate-pulse text-gray-400" aria-hidden="true">
+              {" "}▍
+            </span>
+          )}
+        </p>
+      )}
+
+      {withdrawn && <WithdrawnNote reason={withdrawn} />}
 
       {answer && (
         <div className="flex flex-col lg:flex-row gap-4 print:flex-col">
@@ -243,6 +344,12 @@ export function AssistantTurn({
             )}
             {usage && <UsageFooter usage={usage} />}
             <div className="flex flex-wrap items-center gap-3">
+              {versions && versions.count > 1 && <VersionSwitcher {...versions} />}
+              {onRegenerate && (
+                <Button variant="ghost" size="sm" onClick={onRegenerate}>
+                  <span aria-hidden="true">↻ </span>Regenerate
+                </Button>
+              )}
               {queryHistoryId != null && (
                 <SaveToggle
                   key={queryHistoryId}

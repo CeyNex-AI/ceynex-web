@@ -183,6 +183,12 @@ export interface ChatMessage {
    * the `news` note on Chat.tsx.
    */
   client_key?: string;
+  /**
+   * Client-only: a streamed draft of this answer was withdrawn before it
+   * arrived, and why ("ungrounded" | "degraded"). Not stored — the stored trace
+   * keeps the `answer_reset` step that records it.
+   */
+  draft_withdrawn?: string | null;
 }
 
 export interface ConversationDetail {

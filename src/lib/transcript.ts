@@ -18,9 +18,15 @@ import type { ChatMessage } from "../types/chat";
 export interface FinishedTurn {
   /** Client-only key, so news fetched beside the turn stays beside it. */
   key: string;
-  /** What the reader typed. */
+  /** What the reader typed. Unused by a regenerate, whose question is stored. */
   question: string;
   mode?: "analyse" | "discuss" | null;
+  /**
+   * Why a streamed draft was withdrawn, if one was ("ungrounded" | "degraded").
+   * Carried onto the folded answer so the reader is told, beside the answer
+   * that replaced it, why the text they watched arrive was taken away.
+   */
+  withdrawn?: string | null;
 }
 
 /** The next free `seq`. Stored rows are numbered from 1 by the server. */
@@ -48,6 +54,7 @@ export function foldTurn(
   if (!answer || frame.failed || frame.clarify) return [];
 
   const seq = nextSeq(messages);
+  const regenerated = frame.regenerated_from != null;
   const user: ChatMessage = {
     id: frame.user_message_id ?? null,
     seq,
@@ -63,7 +70,8 @@ export function foldTurn(
   };
   const assistant: ChatMessage = {
     id: frame.message_id ?? null,
-    seq: seq + 1,
+    // A regenerated answer has no new question before it: it follows directly.
+    seq: regenerated ? seq : seq + 1,
     role: "assistant",
     content: answer.answer,
     mode: turn.mode ?? "analyse",
@@ -84,7 +92,11 @@ export function foldTurn(
     usage: frame.usage ?? null,
     query_history_id: frame.query_history_id ?? null,
     saved: false,
+    regenerated_from: frame.regenerated_from ?? null,
     client_key: turn.key,
+    draft_withdrawn: turn.withdrawn ?? null,
   };
-  return [user, assistant];
+  // A regenerate's question is the one already in the transcript; the server
+  // stored only the new answer, and so does this.
+  return regenerated ? [assistant] : [user, assistant];
 }
