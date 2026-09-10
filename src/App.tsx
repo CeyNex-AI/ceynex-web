@@ -12,6 +12,7 @@ import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Query from "./pages/Query";
+import Signup from "./pages/Signup";
 
 function navLinkClass(isActive: boolean, stacked: boolean) {
   const base = stacked ? "block px-3 py-2 rounded-md text-sm font-medium transition-colors" : navLinkClassInline;
@@ -30,9 +31,14 @@ function NavBar() {
   const links = (stacked: boolean) => (
     <>
       {!userId && (
-        <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
-          Login
-        </NavLink>
+        <>
+          <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+            Login
+          </NavLink>
+          <NavLink to="/signup" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+            Sign up
+          </NavLink>
+        </>
       )}
       <NavLink to="/query" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Query
@@ -106,6 +112,7 @@ function App() {
           <main id="main-content">
             <Routes>
               <Route path="/" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
               <Route
                 path="/query"
                 element={

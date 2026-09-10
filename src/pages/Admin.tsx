@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   type DQFlagItem,
@@ -6,15 +6,20 @@ import {
   type ModelSummary,
   type PipelineRunItem,
   type ProviderStatusItem,
+  type UserAdminItem,
+  createUser,
   fetchDQFlags,
   fetchLLMStatus,
   fetchModels,
   fetchPipelineStatus,
+  fetchUsers,
   resolveDQFlag,
   retrainModel,
+  setUserDisabled,
+  setUserRole,
   triggerIngest,
 } from "../lib/adminApi";
-import { ROLE_LABELS } from "../lib/roles";
+import { ALL_ROLES, ROLE_LABELS, type Role } from "../lib/roles";
 import { type Theme } from "../lib/siteApi";
 import { useTheme } from "../lib/useTheme";
 import timeAgo from "../lib/timeAgo";
@@ -451,9 +456,173 @@ function AppearanceCard() {
   );
 }
 
+/**
+ * RBAC (SRS 3.5.4): every account, its role, and its enabled state. The role
+ * dropdown and the disable/enable button are live actions -- same posture as
+ * Retrain/Resolve, no separate save step. The backend refuses (409) anything
+ * that would remove the last admin, and that message is shown inline rather
+ * than the change silently not sticking.
+ */
+function UsersCard({ currentEmail }: { currentEmail: string | null }) {
+  const [users, setUsers] = useState<UserAdminItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  // create form
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<Role>("researcher");
+  const [creating, setCreating] = useState(false);
+
+  function reload() {
+    fetchUsers()
+      .then(setUsers)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load users."));
+  }
+
+  useEffect(reload, []);
+
+  async function runAction<T>(id: number, action: () => Promise<T>) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await action();
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That didn't work.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!newEmail.trim() || newPassword.length < 8) {
+      setError("Enter an email and a password of at least 8 characters.");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createUser(newEmail.trim(), newPassword, newRole);
+      setNewEmail("");
+      setNewPassword("");
+      setNewRole("researcher");
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't create the user.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <Card title="Users" subtitle="Accounts, roles, and access. Changes take effect on the next sign-in.">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
+        <div className="flex-1 min-w-[10rem]">
+          <label htmlFor="new-user-email" className="block text-xs font-medium text-gray-500 mb-1">
+            Email
+          </label>
+          <input
+            id="new-user-email"
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            className="cx-input w-full px-2.5 py-1.5 text-sm"
+            placeholder="person@org.lk"
+          />
+        </div>
+        <div className="min-w-[9rem]">
+          <label htmlFor="new-user-password" className="block text-xs font-medium text-gray-500 mb-1">
+            Temp password
+          </label>
+          <input
+            id="new-user-password"
+            type="text"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="off"
+            className="cx-input w-full px-2.5 py-1.5 text-sm"
+            placeholder="8+ characters"
+          />
+        </div>
+        <div>
+          <label htmlFor="new-user-role" className="block text-xs font-medium text-gray-500 mb-1">
+            Role
+          </label>
+          <select
+            id="new-user-role"
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value as Role)}
+            className="cx-input px-2.5 py-1.5 text-sm"
+          >
+            {ALL_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" disabled={creating} className="cx-btn-primary text-xs px-3 py-1.5">
+          {creating ? "Adding…" : "Add user"}
+        </button>
+      </form>
+
+      {!users && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {users && users.length === 0 && <p className="text-sm text-gray-400">No users yet.</p>}
+      {users && users.length > 0 && (
+        <ul className="space-y-1.5">
+          {users.map((u) => {
+            const isSelf = currentEmail !== null && u.email === currentEmail;
+            const busy = busyId === u.id;
+            return (
+              <li
+                key={u.id}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+              >
+                <span className={`truncate ${u.disabled ? "text-gray-400 line-through" : "text-gray-800"}`}>
+                  {u.email}
+                  {isSelf && <span className="text-gray-400 no-underline"> (you)</span>}
+                </span>
+                <select
+                  value={u.role}
+                  disabled={busy}
+                  onChange={(e) => runAction(u.id, () => setUserRole(u.id, e.target.value))}
+                  className="cx-input text-xs px-2 py-1"
+                  aria-label={`Role for ${u.email}`}
+                >
+                  {ALL_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => runAction(u.id, () => setUserDisabled(u.id, !u.disabled))}
+                  className="cx-btn-secondary text-xs px-2.5 py-1 shrink-0"
+                >
+                  {busy ? "…" : u.disabled ? "Enable" : "Disable"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 export default function Admin() {
   usePageTitle("Admin");
-  const { role } = useAuth();
+  const { role, userId } = useAuth();
   const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -503,6 +672,8 @@ export default function Admin() {
             Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
           </p>
         </div>
+
+        <UsersCard currentEmail={userId} />
 
         <AppearanceCard />
 

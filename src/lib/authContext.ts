@@ -7,6 +7,7 @@ export interface AuthContextValue {
   /** True until a stored token has been checked against the server on load. */
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
