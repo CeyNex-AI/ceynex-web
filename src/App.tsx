@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import SharedConversation from "./pages/SharedConversation";
 import QueryWorkspace from "./pages/QueryWorkspace";
 
 function navLinkClass(isActive: boolean, stacked: boolean) {
@@ -135,7 +136,10 @@ function App() {
                 </RequireAuth>
               }
             />
-            <Route path="*" element={<NotFound />} />
+            {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
+              Read-only, no composer, and it carries no identity. */}
+          <Route path="/shared/:token" element={<SharedConversation />} />
+          <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </BrowserRouter>

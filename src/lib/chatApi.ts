@@ -58,3 +58,15 @@ export function fetchTrace(conversationId: number, requestId: string): Promise<T
     { auth: true },
   );
 }
+
+/** Mint or revoke a read-only link to a finished conversation (§5). */
+export function shareConversation(
+  conversationId: number,
+  shared: boolean,
+): Promise<{ shared: boolean; token: string | null }> {
+  return apiFetch(`/api/chat/conversations/${conversationId}/share`, {
+    method: "POST",
+    auth: true,
+    body: { shared },
+  });
+}
