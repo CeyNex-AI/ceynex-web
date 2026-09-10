@@ -283,6 +283,20 @@ function toRow(event: TraceEvent, index: number): Row | null {
         status: "ok",
       };
 
+    case "budget":
+      // Why an answer arrived without prose: a daily limit was spent. Stated,
+      // because a degraded answer with no reason given reads as a broken one.
+      return {
+        key,
+        icon: "$",
+        label:
+          event.scope === "user"
+            ? "Your daily model budget is used up — answering without model-written prose"
+            : "The deployment's daily model budget is used up — answering without prose",
+        meta: event.cap_usd !== undefined ? `limit $${event.cap_usd.toFixed(2)} a day` : undefined,
+        status: "empty",
+      };
+
     case "answer_delta":
       // The answer itself, arriving sentence by sentence. It is rendered as the
       // answer, not as a step — a row per sentence would duplicate the prose.

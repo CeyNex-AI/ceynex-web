@@ -103,6 +103,12 @@ export interface TraceEvent {
   // draft so far was withdrawn (`reason`: "ungrounded" | "retry")
   text?: string;
   index?: number;
+
+  // budget — a daily model-spend limit was reached (D16)
+  scope?: "user" | "global";
+  cap_usd?: number;
+  spent_usd?: number;
+  resets_at?: string;
 }
 
 /** What the `done` frame carries, and what a stored assistant message replays. */

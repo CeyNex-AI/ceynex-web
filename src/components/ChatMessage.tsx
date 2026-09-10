@@ -242,6 +242,7 @@ export function AssistantTurn({
   /** One line of context above the answer — e.g. that it was regenerated. */
   notice?: string;
 }) {
+  const budget = events.find((event) => event.kind === "budget");
   // Which evidence entry a `[n]` citation just pointed at — shown with a ring,
   // and cleared shortly after so the panel does not keep a stale highlight.
   const [cited, setCited] = useState<number | null>(null);
@@ -299,6 +300,20 @@ export function AssistantTurn({
       )}
 
       {withdrawn && <WithdrawnNote reason={withdrawn} />}
+
+      {budget && (
+        // SRS 3.4.6: a restriction disclosed where it bites, not only on the
+        // Account page. Derived from the turn's own trace, so it is exactly as
+        // true as the step that recorded it.
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 flex gap-2">
+          <span aria-hidden="true">⚠</span>
+          <span>
+            {budget.scope === "user" ? "Your" : "The deployment's"} daily model budget is used
+            up, so this answer has no model-written prose — its figures and evidence are
+            unaffected. It resets at 00:00 UTC; the Account page shows your usage.
+          </span>
+        </p>
+      )}
 
       {answer && (
         <div className="flex flex-col lg:flex-row gap-4 print:flex-col">

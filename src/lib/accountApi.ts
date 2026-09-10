@@ -108,6 +108,13 @@ export interface UsageLimits {
   /** The cap is per uvicorn worker, so real spend can reach worker_count times it. */
   cap_is_per_worker: boolean;
   worker_count: number;
+  /** This reader's own daily model budget (D16); 0 when none is set. */
+  per_user_daily_cap_usd: number;
+  spent_today_by_you_usd: number;
+  /** The next 00:00 UTC, when both daily limits start again. */
+  resets_at: string | null;
+  your_budget_spent: boolean;
+  deployment_cap_spent: boolean;
 }
 
 export interface UserInstruction {

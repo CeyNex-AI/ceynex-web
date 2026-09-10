@@ -22,6 +22,14 @@ function money(value: number): string {
   return value < 0.01 && value > 0 ? `$${value.toFixed(6)}` : `$${value.toFixed(2)}`;
 }
 
+/** "00:00 UTC (05:30 your time)" — the limit is a UTC day, the reader is not. */
+function resetTime(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "00:00 UTC";
+  const local = at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return `00:00 UTC (${local} your time)`;
+}
+
 export default function UsagePanel({ scope = "user" }: { scope?: "user" | "all" }) {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [limits, setLimits] = useState<UsageLimits | null>(null);
@@ -131,10 +139,33 @@ export default function UsagePanel({ scope = "user" }: { scope?: "user" | "all" 
               <li key={limit.key}>{limit.key}</li>
             ))}
           </ul>
+          {limits.per_user_daily_cap_usd > 0 && (
+            <p className="mt-3 text-sm text-gray-600">
+              Your daily model budget: {money(limits.per_user_daily_cap_usd)}. Used today:{" "}
+              {money(limits.spent_today_by_you_usd)}.
+              {limits.resets_at && <> Resets at {resetTime(limits.resets_at)}.</>}
+              {limits.your_budget_spent && (
+                // What reaching the limit *means*, not just that it was reached:
+                // answers keep coming, only the model-written prose stops.
+                <span className="block text-xs text-amber-800 mt-1">
+                  <span aria-hidden="true">⚠ </span>
+                  Used up for today. Until it resets, answers still carry their figures,
+                  evidence and confidence, but without model-written prose.
+                </span>
+              )}
+            </p>
+          )}
           {limits.daily_spend_cap_usd > 0 && (
             <p className="mt-3 text-sm text-gray-600">
               Daily model-spend cap: {money(limits.daily_spend_cap_usd)}. Spent today:{" "}
               {money(limits.spent_today_usd)}.
+              {limits.deployment_cap_spent && (
+                <span className="block text-xs text-amber-800 mt-1">
+                  <span aria-hidden="true">⚠ </span>
+                  Reached for the whole deployment today; answers are figures and evidence
+                  without model-written prose until it resets.
+                </span>
+              )}
               {limits.cap_is_per_worker && (
                 // Said plainly rather than hidden: the cap is enforced per
                 // server process, so the real ceiling is a multiple of it. A page
