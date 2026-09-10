@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { evidenceId } from "../lib/evidenceAnchor";
 import type { Evidence } from "../types/contracts";
 
 /**
@@ -7,7 +8,22 @@ import type { Evidence } from "../types/contracts";
  * caller is responsible for placing it in a sidebar column next to the
  * answer (see Query.tsx's two-column layout), not popping it over the top.
  */
-export default function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
+export default function EvidencePanel({
+  evidence,
+  idPrefix,
+  highlight,
+}: {
+  evidence: Evidence[];
+  /**
+   * Gives each entry a stable id and makes it focusable, so a `[n]` citation in
+   * the answer can move the reader — and keyboard focus — to what it cites.
+   * Numbered in response order, which is merged evidence first and web results
+   * last, exactly as the merge prompt numbered its SOURCES.
+   */
+  idPrefix?: string;
+  /** The 1-based entry a citation just pointed at, shown with a ring. */
+  highlight?: number | null;
+}) {
   return (
     <aside className="w-full lg:w-80 shrink-0 bg-white border border-gray-200 rounded-lg p-4">
       <h2 className="text-sm font-semibold text-gray-900 mb-3">Evidence</h2>
@@ -15,8 +31,13 @@ export default function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
         <p className="text-sm text-gray-500">No supporting evidence for this answer.</p>
       ) : (
         <ul className="space-y-3">
-          {evidence.map((item) => (
-            <EvidenceItem key={`${item.source_id}-${item.detail}`} item={item} />
+          {evidence.map((item, i) => (
+            <EvidenceItem
+              key={`${i}-${item.source_id}-${item.detail}`}
+              item={item}
+              id={idPrefix ? evidenceId(idPrefix, i + 1) : undefined}
+              highlighted={highlight === i + 1}
+            />
           ))}
         </ul>
       )}
@@ -24,7 +45,15 @@ export default function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
   );
 }
 
-function EvidenceItem({ item }: { item: Evidence }) {
+function EvidenceItem({
+  item,
+  id,
+  highlighted,
+}: {
+  item: Evidence;
+  id?: string;
+  highlighted?: boolean;
+}) {
   const [showDetail, setShowDetail] = useState(false);
   // A general web result is not a verified source, and must not look like one.
   // Teal means "we queried this and can re-query it" everywhere in this UI; a
@@ -33,9 +62,14 @@ function EvidenceItem({ item }: { item: Evidence }) {
   const web = item.source_id === "WEB";
   return (
     <li
-      className={`border rounded-md p-3 ${
+      id={id}
+      // Focusable only by script (-1), so a citation can move focus here
+      // without adding a tab stop per evidence entry.
+      tabIndex={id ? -1 : undefined}
+      className={`border rounded-md p-3 focus-visible:outline-2 focus-visible:outline-offset-2
+                  focus-visible:outline-teal-600 motion-safe:transition-shadow ${
         web ? "border-amber-200 bg-amber-50/60" : "border-gray-100 bg-gray-50"
-      }`}
+      } ${highlighted ? "ring-2 ring-teal-500" : ""}`}
     >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span

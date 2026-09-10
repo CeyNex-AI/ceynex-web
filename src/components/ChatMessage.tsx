@@ -13,6 +13,9 @@
  * behind it.
  */
 
+import { useState } from "react";
+import { evidenceId } from "../lib/evidenceAnchor";
+import { saveQuery, unsaveQuery } from "../lib/historyApi";
 import AnswerFeedback from "./AnswerFeedback";
 import CitedAnswer from "./CitedAnswer";
 import ConfidenceBadge from "./ConfidenceBadge";
@@ -27,13 +30,80 @@ import ReasoningTrace from "./ReasoningTrace";
 import { Pill } from "./ui";
 import type { AnswerPayload, TraceEvent, UsageSummary } from "../types/chat";
 
-export function UserTurn({ content }: { content: string }) {
+export function UserTurn({
+  content,
+  interpretedAs,
+}: {
+  content: string;
+  /**
+   * The question the system actually ran, when it is not what was typed — a
+   * follow-up rewritten to stand alone, or a question composed with the
+   * reader's answer to a clarification. Shown rather than hidden, so the reader
+   * can see exactly what was analysed in their name.
+   */
+  interpretedAs?: string | null;
+}) {
   return (
-    <li className="flex justify-end">
+    <li className="flex flex-col items-end gap-1">
       <p className="max-w-[85%] bg-teal-600 text-white rounded-lg rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap">
         {content}
       </p>
+      {interpretedAs && interpretedAs !== content && (
+        <p className="max-w-[85%] text-xs text-gray-500 text-right">
+          <span className="font-medium">Interpreted as:</span> {interpretedAs}
+        </p>
+      )}
     </li>
+  );
+}
+
+/**
+ * Bookmark the analysis, through the History panel's own endpoint.
+ *
+ * `query_history_id` links a chat turn to the row `/api/history` already
+ * lists, so saving here and saving there are the same action on the same row —
+ * the star cannot disagree with the History panel because there is only one
+ * saved flag.
+ */
+function SaveToggle({ historyId, initiallySaved }: { historyId: number; initiallySaved: boolean }) {
+  const [saved, setSaved] = useState(initiallySaved);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function toggle() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      if (saved) await unsaveQuery(historyId);
+      else await saveQuery(historyId);
+      setSaved(!saved);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2 text-xs print:hidden">
+      <button
+        type="button"
+        aria-pressed={saved}
+        disabled={busy}
+        onClick={() => void toggle()}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-1 ring-1 ring-inset ring-gray-200
+                   bg-white hover:bg-gray-50 disabled:text-gray-400 focus-visible:outline-2
+                   focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+      >
+        <span aria-hidden="true" className={saved ? "text-teal-600" : "text-gray-400"}>
+          {saved ? "★" : "☆"}
+        </span>
+        {saved ? "Saved to History" : "Save to History"}
+      </button>
+      <span role="status" aria-live="polite" className="text-red-700">
+        {failed ? "Could not update — try again." : ""}
+      </span>
+    </span>
   );
 }
 
@@ -64,6 +134,8 @@ export function AssistantTurn({
   traceLoading,
   messageId,
   onFollowUp,
+  queryHistoryId,
+  saved,
 }: {
   answer?: AnswerPayload;
   events: TraceEvent[];
@@ -86,7 +158,28 @@ export function AssistantTurn({
   /** Present only on a stored turn — a rating needs a row to attach to. */
   messageId?: number;
   onFollowUp?: (question: string) => void;
+  /** The `query_history` row an analysis wrote. Absent on a discussion. */
+  queryHistoryId?: number | null;
+  saved?: boolean;
 }) {
+  // Which evidence entry a `[n]` citation just pointed at — shown with a ring,
+  // and cleared shortly after so the panel does not keep a stale highlight.
+  const [cited, setCited] = useState<number | null>(null);
+  const evidencePrefix = `evidence-${graphKey}`;
+
+  function showCitation(index: number) {
+    setCited(index);
+    const target = document.getElementById(evidenceId(evidencePrefix, index));
+    if (target) {
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+      // Focus follows the eye: a keyboard or screen-reader user who activates
+      // a citation lands on the source, not back at the top of the answer.
+      target.focus({ preventScroll: true });
+    }
+    window.setTimeout(() => setCited((current) => (current === index ? null : current)), 2500);
+  }
+
   return (
     <li className="space-y-3">
       <ReasoningTrace
@@ -129,7 +222,7 @@ export function AssistantTurn({
               )}
             </div>
 
-            <CitedAnswer text={answer.answer} evidence={answer.evidence} />
+            <CitedAnswer text={answer.answer} evidence={answer.evidence} onCite={showCitation} />
 
             {answer.unanswered.length > 0 && (
               <div className="text-sm text-gray-500">
@@ -149,12 +242,27 @@ export function AssistantTurn({
               <FollowUpChips answer={answer} onPick={onFollowUp} />
             )}
             {usage && <UsageFooter usage={usage} />}
-            {messageId !== undefined && <AnswerFeedback messageId={messageId} />}
+            <div className="flex flex-wrap items-center gap-3">
+              {queryHistoryId != null && (
+                <SaveToggle
+                  key={queryHistoryId}
+                  historyId={queryHistoryId}
+                  initiallySaved={saved ?? false}
+                />
+              )}
+              {messageId !== undefined && <AnswerFeedback messageId={messageId} />}
+            </div>
           </div>
 
           {(answer.evidence.length > 0 || newsSource) && (
             <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
-              {answer.evidence.length > 0 && <EvidencePanel evidence={answer.evidence} />}
+              {answer.evidence.length > 0 && (
+                <EvidencePanel
+                  evidence={answer.evidence}
+                  idPrefix={evidencePrefix}
+                  highlight={cited}
+                />
+              )}
               {newsSource && (
                 <NewsPanel
                   articles={news ?? null}
