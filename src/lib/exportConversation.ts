@@ -7,12 +7,18 @@
  */
 
 import type { ChatMessage } from "../types/chat";
+import { latestOnly } from "./versions";
 
+/**
+ * Each question with its latest answer only: an export is a document, and a
+ * document with two answers to one question reads as the system contradicting
+ * itself. The earlier versions stay in the conversation, a click away.
+ */
 export function conversationToMarkdown(title: string | null, messages: ChatMessage[]): string {
   const lines: string[] = [`# ${title || "CeyNex conversation"}`, ""];
   const sources: { label: string; detail: string; url?: string }[] = [];
 
-  for (const message of messages) {
+  for (const message of latestOnly(messages)) {
     if (message.role === "user") {
       lines.push(`## ${message.content}`, "");
       continue;
