@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, type Location } from "react-router-dom";
+import PasswordStrength from "../components/PasswordStrength";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 
@@ -96,6 +97,7 @@ export default function Signup() {
               className="cx-input w-full px-3 py-2 text-sm"
               placeholder="At least 8 characters"
             />
+            <PasswordStrength password={password} />
           </div>
 
           <div>
