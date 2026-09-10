@@ -7,6 +7,9 @@
  * taxonomy does.
  */
 
+import type { Breakdown } from "../components/ConfidenceBreakdown";
+import type { ConfidenceBand } from "../lib/confidence";
+
 import type { AnswerGraph, Evidence, ForecastPoint } from "./contracts";
 
 /**
@@ -27,6 +30,14 @@ export interface TraceEvent {
   status?: string;
   elapsed_ms?: number;
   error?: string;
+
+  // web_search — general web enrichment, never evidence for the answer (D14)
+  results?: number;
+  domains?: string[];
+
+  // clarify — the gate asked one question back, or decided against it (D13)
+  asked?: boolean;
+  question?: string;
 
   // kg_query
   cypher?: string;
@@ -85,7 +96,7 @@ export interface TraceEvent {
 export interface AnswerPayload {
   answer: string;
   confidence: number | null;
-  confidence_band: string | null;
+  confidence_band: ConfidenceBand | null;
   agents_used: string[];
   evidence: Evidence[];
   forecast?: ForecastPoint[] | null;
@@ -98,6 +109,8 @@ export interface AnswerPayload {
   /** Present on a `discuss` turn: false when the reply was discarded for
    *  stating a figure the analysis never produced. */
   grounded?: boolean;
+  /** Every term in the SRS 3.1.4 formula, when the score was computed. */
+  confidence_breakdown?: Breakdown | null;
 }
 
 export interface UsageSummary {
@@ -119,6 +132,8 @@ export interface ConversationSummary {
 }
 
 export interface ChatMessage {
+  /** The row id — what feedback attaches to. `seq` only orders the transcript. */
+  id?: number | null;
   seq: number;
   role: "user" | "assistant";
   content: string;
@@ -126,7 +141,7 @@ export interface ChatMessage {
   mode?: "analyse" | "discuss" | "clarify" | null;
   request_id?: string | null;
   confidence?: number | null;
-  confidence_band?: string | null;
+  confidence_band?: ConfidenceBand | null;
   degraded?: boolean | null;
   agents_used: string[];
   route: string[];
