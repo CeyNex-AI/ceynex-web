@@ -234,9 +234,11 @@ function toRow(event: TraceEvent, index: number): Row | null {
         status: event.status === "ok" ? "ok" : "empty",
       };
 
-    case "clarify":
+    case "clarify_gate":
       // Asked, or considered and decided against. Both are real steps: a gate
       // that silently declined to fire is still a decision the reader can audit.
+      // Named apart from the `clarify` *frame* (the question itself), which the
+      // stream client routes to the ClarifyCard rather than to the trace.
       return {
         key,
         icon: "?",

@@ -31,11 +31,15 @@ export interface TraceEvent {
   elapsed_ms?: number;
   error?: string;
 
+  // start — names the turn, and says whether a dropped stream can resume it
+  request_id?: string;
+  resumable?: boolean;
+
   // web_search — general web enrichment, never evidence for the answer (D14)
   results?: number;
   domains?: string[];
 
-  // clarify — the gate asked one question back, or decided against it (D13)
+  // clarify_gate — the gate asked one question back, or decided against it (D13)
   asked?: boolean;
   question?: string;
 

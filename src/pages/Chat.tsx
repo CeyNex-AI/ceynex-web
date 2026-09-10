@@ -33,7 +33,7 @@ import {
 import { fetchNewsSearch } from "../lib/newsApi";
 import type { NewsArticle, NewsSource } from "../lib/newsApi";
 import { conversationToMarkdown } from "../lib/exportConversation";
-import { ChatStreamError, streamChat, streamClarifyAnswer } from "../lib/streamChat";
+import { ChatStreamError, cancelTurn, streamChat, streamClarifyAnswer } from "../lib/streamChat";
 import type { DoneFrame } from "../lib/streamChat";
 import { foldTurn } from "../lib/transcript";
 import type { FinishedTurn } from "../lib/transcript";
@@ -72,6 +72,10 @@ interface LiveTurn {
   dropped?: boolean;
   /** The gate asked one question back instead of answering. Not a failure. */
   clarify?: ClarifyPrompt;
+  /** Stopped at the reader's request. Nothing from the turn was stored. */
+  stopped?: boolean;
+  /** The connection dropped and a resume is under way. */
+  reconnecting?: { attempt: number; of: number } | null;
   done: boolean;
 }
 
@@ -94,6 +98,8 @@ interface TurnNews {
 /** The turn in progress, as the stream handlers accumulate it. */
 interface TurnInProgress extends FinishedTurn {
   events: TraceEvent[];
+  /** From the `start` frame — what Stop names when it asks the server to stop. */
+  requestId?: string;
 }
 
 export default function Chat() {
@@ -236,6 +242,9 @@ export default function Chat() {
       onEvent: (event: TraceEvent) => {
         const turn = inProgress.current;
         if (!turn) return;
+        if (event.kind === "start" && typeof event.request_id === "string") {
+          turn.requestId = event.request_id;
+        }
         turn.events.push(event);
         if (event.kind === "turn") {
           turn.mode = event.mode ?? turn.mode;
@@ -268,11 +277,26 @@ export default function Chat() {
           return;
         }
         setLive((current) =>
-          current ? { ...current, answer: frame.answer, usage: frame.usage, done: true } : current,
+          current
+            ? {
+                ...current,
+                answer: frame.answer,
+                usage: frame.usage,
+                stopped: Boolean(frame.cancelled),
+                reconnecting: null,
+                done: true,
+              }
+            : current,
         );
       },
+      onReconnecting: (attempt: number, of: number) =>
+        setLive((current) => (current ? { ...current, reconnecting: { attempt, of } } : current)),
+      onReconnected: () =>
+        setLive((current) => (current ? { ...current, reconnecting: null } : current)),
       onDropped: () =>
-        setLive((current) => (current ? { ...current, dropped: true, done: true } : current)),
+        setLive((current) =>
+          current ? { ...current, dropped: true, reconnecting: null, done: true } : current,
+        ),
     };
   }
 
@@ -390,9 +414,25 @@ export default function Chat() {
     }
   }
 
-  function stop() {
+  /**
+   * Stop is a request to the server, not a hang-up: a signed-in turn keeps
+   * running when its reader disconnects (backend D12, amended), so closing the
+   * socket would only stop us listening. Once the server has cancelled, the
+   * stream ends with its own `done` frame. Before the turn has a request id —
+   * or if the request cannot be sent — dropping the connection is all we have.
+   */
+  async function stop() {
+    const requestId = inProgress.current?.requestId;
+    if (requestId) {
+      try {
+        await cancelTurn(requestId);
+        return; // the stream's own `done` frame ends the turn
+      } catch {
+        /* fall through to aborting */
+      }
+    }
     abort.current?.abort();
-    setLive((current) => (current ? { ...current, done: true } : current));
+    setLive((current) => (current ? { ...current, stopped: true, done: true } : current));
   }
 
   return (
@@ -546,12 +586,26 @@ export default function Chat() {
                   onSkip={() => void resolveClarification(live.clarify!.pending_id, [], true)}
                 />
               )}
+              {live.reconnecting && (
+                <li role="status" aria-live="polite" className="text-sm text-gray-600 flex items-center gap-2">
+                  <span className="motion-safe:animate-pulse" aria-hidden="true">
+                    ○
+                  </span>
+                  Connection lost — reconnecting (attempt {live.reconnecting.attempt} of{" "}
+                  {live.reconnecting.of})…
+                </li>
+              )}
+              {live.stopped && (
+                <li role="status" className="text-sm text-gray-600">
+                  Stopped. Nothing from this question was saved.
+                </li>
+              )}
               {live.dropped && (
                 <li className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3 flex flex-wrap items-center gap-3">
                   <span>
-                    The connection dropped before this turn finished. It may have
-                    completed on the server — reload the conversation to check
-                    before asking again.
+                    The connection dropped and could not be re-established. The
+                    server keeps working on a question once asked, so reload the
+                    conversation in a moment to see its answer before asking again.
                   </span>
                   <Button
                     variant="secondary"
@@ -592,7 +646,7 @@ export default function Chat() {
                        focus-visible:outline-teal-600"
           />
           {streaming ? (
-            <Button variant="secondary" onClick={stop}>
+            <Button variant="secondary" onClick={() => void stop()}>
               Stop
             </Button>
           ) : (
