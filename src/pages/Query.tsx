@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
+import FreshnessRibbon from "../components/FreshnessRibbon";
 import KnowledgeGraphPanel from "../components/KnowledgeGraphPanel";
 import NewsPanel from "../components/NewsPanel";
 import TrendingNews from "../components/TrendingNews";
@@ -250,9 +251,14 @@ export default function Query() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Ask CeyNex</h1>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-2">
           Ask about Sri Lanka's tea, cinnamon, and apparel export performance.
         </p>
+        {/* The same one line the chat page shows: how current the data behind
+            any answer on this page is. Silent when unavailable. */}
+        <div className="mb-6 print:hidden">
+          <FreshnessRibbon />
+        </div>
 
         <form onSubmit={handleSubmit} className="print:hidden flex gap-2 mb-3">
           <input
