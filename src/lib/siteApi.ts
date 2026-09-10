@@ -1,4 +1,5 @@
 import { getToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * The site-wide UI theme -- GET /api/site/theme (public, no token needed:
@@ -14,7 +15,7 @@ function normalize(value: unknown): Theme {
 }
 
 export async function fetchSiteTheme(): Promise<Theme> {
-  const res = await fetch("/api/site/theme");
+  const res = await apiFetch("/api/site/theme");
   if (!res.ok) throw new Error(`status ${res.status}`);
   const data = await res.json();
   return normalize(data.theme);
@@ -23,7 +24,7 @@ export async function fetchSiteTheme(): Promise<Theme> {
 export async function setSiteTheme(theme: Theme): Promise<Theme> {
   const token = getToken();
   if (!token) throw new Error("Not signed in.");
-  const res = await fetch("/api/site/theme", {
+  const res = await apiFetch("/api/site/theme", {
     method: "POST",
     headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
     body: JSON.stringify({ theme }),

@@ -1,4 +1,5 @@
 import { getToken, setToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * Real GET/PUT /api/account/preferences and the API-key routes, proxied
@@ -37,7 +38,7 @@ function authHeaders(): HeadersInit {
 }
 
 export async function fetchPreferences(): Promise<NotificationPreferences> {
-  const res = await fetch("/api/account/preferences", { headers: authHeaders() });
+  const res = await apiFetch("/api/account/preferences", { headers: authHeaders() });
   if (!res.ok) throw new Error(`Couldn't load preferences (${res.status}).`);
   return res.json();
 }
@@ -45,7 +46,7 @@ export async function fetchPreferences(): Promise<NotificationPreferences> {
 export async function savePreferences(
   prefs: NotificationPreferences
 ): Promise<NotificationPreferences> {
-  const res = await fetch("/api/account/preferences", {
+  const res = await apiFetch("/api/account/preferences", {
     method: "PUT",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify(prefs),
@@ -55,14 +56,14 @@ export async function savePreferences(
 }
 
 export async function fetchApiKeys(): Promise<ApiKeyItem[]> {
-  const res = await fetch("/api/account/api-keys", { headers: authHeaders() });
+  const res = await apiFetch("/api/account/api-keys", { headers: authHeaders() });
   if (!res.ok) throw new Error(`Couldn't load API keys (${res.status}).`);
   const data: { keys: ApiKeyItem[] } = await res.json();
   return data.keys;
 }
 
 export async function createApiKey(label: string): Promise<NewApiKey> {
-  const res = await fetch("/api/account/api-keys", {
+  const res = await apiFetch("/api/account/api-keys", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ label }),
@@ -72,7 +73,7 @@ export async function createApiKey(label: string): Promise<NewApiKey> {
 }
 
 export async function revokeApiKey(id: number): Promise<void> {
-  const res = await fetch(`/api/account/api-keys/${id}/revoke`, {
+  const res = await apiFetch(`/api/account/api-keys/${id}/revoke`, {
     method: "POST",
     headers: authHeaders(),
   });
@@ -92,7 +93,7 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<void> {
-  const res = await fetch("/api/account/password", {
+  const res = await apiFetch("/api/account/password", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
@@ -117,7 +118,7 @@ export async function changeEmailApi(
   currentPassword: string,
   newEmail: string
 ): Promise<{ token: string; email: string; role: string }> {
-  const res = await fetch("/api/account/email", {
+  const res = await apiFetch("/api/account/email", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ current_password: currentPassword, new_email: newEmail }),
@@ -135,7 +136,7 @@ export async function changeEmailApi(
  * Use `useAuth().deleteAccount`, which signs out afterwards.
  */
 export async function deleteAccountApi(currentPassword: string): Promise<void> {
-  const res = await fetch("/api/account", {
+  const res = await apiFetch("/api/account", {
     method: "DELETE",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ current_password: currentPassword }),

@@ -1,4 +1,5 @@
 import { getToken } from "./tokenStorage";
+import { apiFetch } from "./apiFetch";
 
 /**
  * Real ceynex-core admin endpoints (SRS 3.5.4), proxied same-origin the same
@@ -85,13 +86,13 @@ async function unwrap<T>(res: Response, label: string): Promise<T> {
 }
 
 export async function fetchModels(): Promise<ModelSummary[]> {
-  const res = await fetch("/api/admin/models", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/models", { headers: authHeaders() });
   const data = await unwrap<{ models: ModelSummary[] }>(res, "Loading models");
   return data.models;
 }
 
 export async function retrainModel(sector: string, item: string, target: string): Promise<ModelSummary> {
-  const res = await fetch("/api/admin/retrain", {
+  const res = await apiFetch("/api/admin/retrain", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ sector, item, target }),
@@ -100,7 +101,7 @@ export async function retrainModel(sector: string, item: string, target: string)
 }
 
 export async function triggerIngest(sources?: string[]): Promise<IngestResultItem[]> {
-  const res = await fetch("/api/admin/pipeline/ingest", {
+  const res = await apiFetch("/api/admin/pipeline/ingest", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ sources: sources ?? null }),
@@ -110,19 +111,19 @@ export async function triggerIngest(sources?: string[]): Promise<IngestResultIte
 }
 
 export async function fetchPipelineStatus(): Promise<PipelineRunItem[]> {
-  const res = await fetch("/api/admin/pipeline/status", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/pipeline/status", { headers: authHeaders() });
   const data = await unwrap<{ runs: PipelineRunItem[] }>(res, "Loading pipeline status");
   return data.runs;
 }
 
 export async function fetchDQFlags(): Promise<DQFlagItem[]> {
-  const res = await fetch("/api/admin/dq-flags", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/dq-flags", { headers: authHeaders() });
   const data = await unwrap<{ flags: DQFlagItem[] }>(res, "Loading DQ flags");
   return data.flags;
 }
 
 export async function resolveDQFlag(flagId: number): Promise<void> {
-  const res = await fetch(`/api/admin/dq-flags/${flagId}/resolve`, {
+  const res = await apiFetch(`/api/admin/dq-flags/${flagId}/resolve`, {
     method: "POST",
     headers: authHeaders(),
   });
@@ -130,7 +131,7 @@ export async function resolveDQFlag(flagId: number): Promise<void> {
 }
 
 export async function fetchLLMStatus(): Promise<LLMStatus> {
-  const res = await fetch("/api/admin/llm/status", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/llm/status", { headers: authHeaders() });
   return unwrap<LLMStatus>(res, "Loading LLM status");
 }
 
@@ -145,7 +146,7 @@ export interface AuditLogItem {
 }
 
 export async function fetchAuditLog(): Promise<AuditLogItem[]> {
-  const res = await fetch("/api/admin/audit-log", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/audit-log", { headers: authHeaders() });
   const data = await unwrap<{ entries: AuditLogItem[] }>(res, "Loading audit log");
   return data.entries;
 }
@@ -161,7 +162,7 @@ export interface UserAdminItem {
 }
 
 export async function fetchUsers(): Promise<UserAdminItem[]> {
-  const res = await fetch("/api/admin/users", { headers: authHeaders() });
+  const res = await apiFetch("/api/admin/users", { headers: authHeaders() });
   const data = await unwrap<{ users: UserAdminItem[] }>(res, "Loading users");
   return data.users;
 }
@@ -169,7 +170,7 @@ export async function fetchUsers(): Promise<UserAdminItem[]> {
 /** The backend translates a duplicate email to 409 and a bad role / short
  * password to 422 -- surfaced as readable messages rather than a bare code. */
 export async function createUser(email: string, password: string, role: string): Promise<UserAdminItem> {
-  const res = await fetch("/api/admin/users", {
+  const res = await apiFetch("/api/admin/users", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ email, password, role }),
@@ -180,7 +181,7 @@ export async function createUser(email: string, password: string, role: string):
 }
 
 export async function setUserRole(id: number, role: string): Promise<UserAdminItem> {
-  const res = await fetch(`/api/admin/users/${id}/role`, {
+  const res = await apiFetch(`/api/admin/users/${id}/role`, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ role }),
@@ -191,7 +192,7 @@ export async function setUserRole(id: number, role: string): Promise<UserAdminIt
 }
 
 export async function setUserDisabled(id: number, disabled: boolean): Promise<UserAdminItem> {
-  const res = await fetch(`/api/admin/users/${id}/${disabled ? "disable" : "enable"}`, {
+  const res = await apiFetch(`/api/admin/users/${id}/${disabled ? "disable" : "enable"}`, {
     method: "POST",
     headers: authHeaders(),
   });
@@ -203,7 +204,7 @@ export async function setUserDisabled(id: number, disabled: boolean): Promise<Us
 /** Admin reset for a locked-out user — no current-password check server-side.
  * The caller generates the value and is responsible for relaying it. */
 export async function setUserPassword(id: number, password: string): Promise<UserAdminItem> {
-  const res = await fetch(`/api/admin/users/${id}/password`, {
+  const res = await apiFetch(`/api/admin/users/${id}/password`, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ password }),
