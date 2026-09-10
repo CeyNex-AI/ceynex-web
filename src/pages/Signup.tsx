@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, type Location } from "react-router-dom";
 import PasswordStrength from "../components/PasswordStrength";
+import { ROLE_LABELS, SIGNUP_ROLES, type Role } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
 
 /**
  * Self-service registration -- POST /api/auth/signup (see authApi.ts). The
- * backend creates the account at its default role and logs it straight in, so
- * on success `userId` goes truthy and the guard below redirects, exactly like
- * Login.tsx. New accounts always start as "Researcher"; an admin changes that
- * from the Admin page.
+ * backend creates the account and logs it straight in, so on success `userId`
+ * goes truthy and the guard below redirects, exactly like Login.tsx. A signup
+ * picks its own role from `SIGNUP_ROLES` (Researcher default); `admin` is not
+ * on that list -- an admin account is created from the Admin page only.
  */
 export default function Signup() {
   usePageTitle("Sign up");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [role, setRole] = useState<Role>("researcher");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { userId, loading, signup } = useAuth();
@@ -46,7 +48,7 @@ export default function Signup() {
     }
     setSubmitting(true);
     try {
-      await signup(email.trim(), password);
+      await signup(email.trim(), password, role);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed.");
     } finally {
@@ -115,6 +117,27 @@ export default function Signup() {
             />
           </div>
 
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className="cx-input w-full px-3 py-2 text-sm"
+            >
+              {SIGNUP_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">
+              Admin accounts are set up by an administrator.
+            </p>
+          </div>
+
           {error && (
             <p role="alert" className="text-sm text-red-600">
               {error}
@@ -128,10 +151,6 @@ export default function Signup() {
           >
             {submitting ? "Creating account..." : "Create account"}
           </button>
-
-          <p className="text-xs text-gray-400 text-center">
-            New accounts start with the Researcher role.
-          </p>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-500">

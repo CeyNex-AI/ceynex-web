@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Signup returns the same shape as login and the backend logs the new
   // account straight in, so this is login() with a different first call --
   // no separate "now sign in" step.
-  async function signup(email: string, password: string) {
-    applySession(await signupApi(email, password));
+  async function signup(email: string, password: string, role?: string) {
+    applySession(await signupApi(email, password, role));
   }
 
   // The email change invalidates every session for the account server-side;
