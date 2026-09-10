@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  changePassword,
   createApiKey,
   fetchApiKeys,
   fetchPreferences,
@@ -38,6 +39,13 @@ export default function Account() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [justCreated, setJustCreated] = useState<NewApiKey | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaved, setPwSaved] = useState(false);
 
   useEffect(() => {
     fetchPreferences()
@@ -92,6 +100,36 @@ export default function Account() {
     }
   }
 
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwSaved(false);
+    if (pwNew.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("The two new passwords don't match.");
+      return;
+    }
+    if (pwNew === pwCurrent) {
+      setPwError("New password must be different from the current one.");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await changePassword(pwCurrent, pwNew);
+      setPwSaved(true);
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : "Couldn't change password.");
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
   async function handleRevoke(id: number) {
     setRevokingId(id);
     setKeysError(null);
@@ -126,12 +164,60 @@ export default function Account() {
               </span>
             </div>
           )}
-          <p className="text-xs text-gray-400">
-            Demo login: four fixed accounts, no self-service signup.
-          </p>
           <button type="button" onClick={handleLogout} className="cx-btn-secondary w-full text-sm px-4 py-2.5">
             Sign out
           </button>
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">Password</h2>
+          <p className="text-xs text-gray-400">
+            You'll stay signed in on this device after changing it.
+          </p>
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            <input
+              type="password"
+              value={pwCurrent}
+              onChange={(e) => setPwCurrent(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Current password"
+              aria-label="Current password"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            <input
+              type="password"
+              value={pwNew}
+              onChange={(e) => setPwNew(e.target.value)}
+              autoComplete="new-password"
+              placeholder="New password (8+ characters)"
+              aria-label="New password"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            <input
+              type="password"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              autoComplete="new-password"
+              placeholder="Confirm new password"
+              aria-label="Confirm new password"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            {pwError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                {pwError}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}
+                className="cx-btn-primary text-sm px-4 py-2"
+              >
+                {pwSaving ? "Changing..." : "Change password"}
+              </button>
+              {pwSaved && !pwSaving && <span className="text-xs text-teal-700">Password changed.</span>}
+            </div>
+          </form>
         </div>
 
         <div className="cx-panel-flat p-6 space-y-4">

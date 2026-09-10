@@ -13,9 +13,11 @@ import {
   fetchModels,
   fetchPipelineStatus,
   fetchUsers,
+  generatePassword,
   resolveDQFlag,
   retrainModel,
   setUserDisabled,
+  setUserPassword,
   setUserRole,
   triggerIngest,
 } from "../lib/adminApi";
@@ -474,6 +476,9 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
   const [newRole, setNewRole] = useState<Role>("researcher");
   const [creating, setCreating] = useState(false);
 
+  // one-time reveal of a generated reset password
+  const [resetPw, setResetPw] = useState<{ email: string; password: string } | null>(null);
+
   function reload() {
     fetchUsers()
       .then(setUsers)
@@ -490,6 +495,21 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
       reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't work.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleResetPassword(u: UserAdminItem) {
+    setBusyId(u.id);
+    setError(null);
+    setResetPw(null);
+    try {
+      const password = generatePassword();
+      await setUserPassword(u.id, password);
+      setResetPw({ email: u.email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't reset that password.");
     } finally {
       setBusyId(null);
     }
@@ -522,6 +542,34 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
         <p role="alert" className="text-sm text-red-700 mb-2">
           {error}
         </p>
+      )}
+
+      {resetPw && (
+        <div className="bg-teal-50 border border-teal-200 rounded-md px-4 py-3 space-y-2 mb-4">
+          <p className="text-xs text-teal-800">
+            New password for <span className="font-medium">{resetPw.email}</span> — copy it now, it
+            won't be shown again. Send it to them; they can change it from their Account page.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-white border border-teal-200 rounded px-2 py-1.5 overflow-x-auto whitespace-nowrap">
+              {resetPw.password}
+            </code>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(resetPw.password)}
+              className="text-xs font-medium text-teal-700 hover:text-teal-800 border border-teal-300 rounded px-2 py-1.5 shrink-0"
+            >
+              Copy
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setResetPw(null)}
+            className="text-xs text-teal-700 hover:text-teal-800"
+          >
+            Done
+          </button>
+        </div>
       )}
 
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
@@ -584,7 +632,7 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
             return (
               <li
                 key={u.id}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 gap-y-1 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
               >
                 <span className={`truncate ${u.disabled ? "text-gray-400 line-through" : "text-gray-800"}`}>
                   {u.email}
@@ -603,6 +651,15 @@ function UsersCard({ currentEmail }: { currentEmail: string | null }) {
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => handleResetPassword(u)}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-800 disabled:text-gray-300 shrink-0"
+                  title={`Generate a new password for ${u.email}`}
+                >
+                  {busy ? "…" : "Reset pw"}
+                </button>
                 <button
                   type="button"
                   disabled={busy}
