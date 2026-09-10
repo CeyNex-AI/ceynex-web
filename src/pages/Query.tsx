@@ -325,7 +325,10 @@ export default function Query() {
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <p className="text-sm text-gray-500 italic">"{response.query}"</p>
                   <div className="flex items-center gap-2 shrink-0">
-                    <ConfidenceBadge score={response.final_confidence} />
+                    <ConfidenceBadge
+                      score={response.final_confidence}
+                      band={response.confidence_band}
+                    />
                     <button
                       type="button"
                       onClick={() => window.print()}
@@ -336,6 +339,17 @@ export default function Query() {
                   </div>
                 </div>
                 <p className="text-gray-800 leading-relaxed">{response.final_answer}</p>
+                {response.unanswered.length > 0 && (
+                  /* SRS 3.4.3: the orchestrator must say which part of a
+                     question it could not answer rather than silently omitting
+                     it. The backend has always sent this list; the classic page
+                     dropped it in queryApi.ts and so met the requirement only
+                     on the chat surface. */
+                  <p className="mt-3 text-sm text-gray-500">
+                    <span className="font-medium text-gray-600">Not answered: </span>
+                    {response.unanswered.join("; ")}
+                  </p>
+                )}
                 {response.degraded && (
                   <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 inline-block">
                     Showing figures and evidence only. A natural-language explanation isn't available.
