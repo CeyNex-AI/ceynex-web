@@ -183,3 +183,24 @@ export async function setUserDisabled(id: number, disabled: boolean): Promise<Us
   if (res.status === 404) throw new Error("That user no longer exists.");
   return unwrap<UserAdminItem>(res, disabled ? "Disabling user" : "Enabling user");
 }
+
+/** Admin reset for a locked-out user — no current-password check server-side.
+ * The caller generates the value and is responsible for relaying it. */
+export async function setUserPassword(id: number, password: string): Promise<UserAdminItem> {
+  const res = await fetch(`/api/admin/users/${id}/password`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ password }),
+  });
+  if (res.status === 404) throw new Error("That user no longer exists.");
+  return unwrap<UserAdminItem>(res, "Setting password");
+}
+
+/** A throwaway password an admin hands to a locked-out user to sign in and
+ * change. ~20 alphanumeric chars from the CSPRNG (well over the 8-char floor
+ * even after stripping base64 punctuation). */
+export function generatePassword(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, "");
+}

@@ -78,3 +78,23 @@ export async function revokeApiKey(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error(`Couldn't revoke that key (${res.status}).`);
 }
+
+/**
+ * POST /api/account/password. The current password is required (403 if wrong);
+ * the new one must differ and be 8+ chars (422). The current login token stays
+ * valid afterwards, so there's no forced re-login.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const res = await fetch("/api/account/password", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (res.ok) return;
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 422) throw new Error("New password must be different and at least 8 characters.");
+  throw new Error(`Couldn't change password (${res.status}).`);
+}
