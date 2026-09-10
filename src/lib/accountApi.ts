@@ -1,4 +1,4 @@
-import { getToken } from "./tokenStorage";
+import { getToken, setToken } from "./tokenStorage";
 
 /**
  * Real GET/PUT /api/account/preferences and the API-key routes, proxied
@@ -80,9 +80,13 @@ export async function revokeApiKey(id: number): Promise<void> {
 }
 
 /**
- * POST /api/account/password. The current password is required (403 if wrong);
- * the new one must differ and be 8+ chars (422). The current login token stays
- * valid afterwards, so there's no forced re-login.
+ * POST /api/account/password. Current password required (403 if wrong); the new
+ * one must differ and be 8+ chars (422).
+ *
+ * The change invalidates every session for the account server-side, so the
+ * response carries a fresh token — swapped in here so *this* device stays
+ * signed in while other sessions drop. Other tabs pick it up on their next
+ * request failing and re-reading storage; nothing else to do.
  */
 export async function changePassword(
   currentPassword: string,
@@ -93,7 +97,11 @@ export async function changePassword(
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
   });
-  if (res.ok) return;
+  if (res.ok) {
+    const { token } = (await res.json()) as { token?: string };
+    if (token) setToken(token);
+    return;
+  }
   if (res.status === 403) throw new Error("Current password is incorrect.");
   if (res.status === 422) throw new Error("New password must be different and at least 8 characters.");
   throw new Error(`Couldn't change password (${res.status}).`);
