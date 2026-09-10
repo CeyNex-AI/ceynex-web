@@ -10,7 +10,7 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import Query from "./pages/Query";
+import QueryWorkspace from "./pages/QueryWorkspace";
 
 function navLinkClass(isActive: boolean, stacked: boolean) {
   const base = stacked ? "block px-3 py-2 rounded-md text-sm font-medium transition-colors" : navLinkClassInline;
@@ -107,7 +107,7 @@ function App() {
               path="/query"
               element={
                 <RequireAuth>
-                  <Query />
+                  <QueryWorkspace />
                 </RequireAuth>
               }
             />
