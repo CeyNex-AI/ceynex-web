@@ -41,6 +41,7 @@ import {
   streamRegenerate,
 } from "../lib/streamChat";
 import type { DoneFrame } from "../lib/streamChat";
+import { workbenchHrefFor } from "../lib/scenario";
 import { foldTurn } from "../lib/transcript";
 import { groupVersions, type TranscriptRow } from "../lib/versions";
 import type { FinishedTurn } from "../lib/transcript";
@@ -646,6 +647,10 @@ export default function Chat() {
             // aside; it comes back as the previous version once the new one lands.
             if (live?.regenerating != null && row.message.id === live.regenerating) return null;
             const isLatest = position === rows.length - 1;
+            // The question this answer answered: the nearest user row before it.
+            const asked = [...messages]
+              .reverse()
+              .find((m) => m.role === "user" && m.seq < row.message.seq);
             return (
               <VersionedTurn
                 key={`${row.key}:${row.versions?.length ?? 1}`}
@@ -670,6 +675,9 @@ export default function Chat() {
                     queryHistoryId={message.query_history_id}
                     saved={message.saved}
                     withdrawn={message.draft_withdrawn}
+                    workbenchHref={
+                      asked ? workbenchHrefFor(asked.effective_query ?? asked.content, message) : null
+                    }
                     versions={versions}
                     onRegenerate={
                       // The latest answer only, shown as its latest version, once

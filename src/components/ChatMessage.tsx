@@ -14,6 +14,7 @@
  */
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { evidenceId } from "../lib/evidenceAnchor";
 import { saveQuery, unsaveQuery } from "../lib/historyApi";
 import AnswerFeedback from "./AnswerFeedback";
@@ -202,6 +203,7 @@ export function AssistantTurn({
   versions,
   onRegenerate,
   notice,
+  workbenchHref,
 }: {
   answer?: AnswerPayload;
   events: TraceEvent[];
@@ -241,6 +243,12 @@ export function AssistantTurn({
   onRegenerate?: () => void;
   /** One line of context above the answer — e.g. that it was regenerated. */
   notice?: string;
+  /**
+   * Present when the analysis simulated a shock: a link into the scenario
+   * workbench pre-filled from the question, so the reader can move the
+   * assumptions the answer rests on (backend D17).
+   */
+  workbenchHref?: string | null;
 }) {
   const budget = events.find((event) => event.kind === "budget");
   // Which evidence entry a `[n]` citation just pointed at — shown with a ring,
@@ -364,6 +372,15 @@ export function AssistantTurn({
                 <Button variant="ghost" size="sm" onClick={onRegenerate}>
                   <span aria-hidden="true">↻ </span>Regenerate
                 </Button>
+              )}
+              {workbenchHref && (
+                <Link
+                  to={workbenchHref}
+                  className="text-xs font-medium text-teal-700 hover:text-teal-900 rounded-md px-2 py-1
+                             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+                >
+                  Open in scenario workbench
+                </Link>
               )}
               {queryHistoryId != null && (
                 <SaveToggle
