@@ -60,7 +60,7 @@ function HistoryPanel({
   return (
     <div className="print:hidden mb-8">
       <div className="flex items-center gap-3 mb-2">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           {savedOnly ? "Saved queries" : "Recent queries"}
         </p>
         {items.length > COLLAPSED_HISTORY_COUNT && (
@@ -72,7 +72,7 @@ function HistoryPanel({
             type="button"
             onClick={() => setExpanded((current) => !current)}
             aria-expanded={expanded}
-            className="text-xs font-medium text-gray-400 hover:text-teal-700"
+            className="text-xs font-medium text-gray-500 hover:text-teal-700"
           >
             {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
           </button>
@@ -87,7 +87,7 @@ function HistoryPanel({
               className={`text-[10px] font-medium uppercase tracking-wide rounded-full px-2 py-0.5 ${
                 (tab === "saved") === savedOnly
                   ? "bg-teal-50 text-teal-700"
-                  : "text-gray-400 hover:text-gray-600"
+                  : "text-gray-500 hover:text-gray-600"
               }`}
             >
               {tab}
@@ -97,7 +97,7 @@ function HistoryPanel({
       </div>
 
       {items.length === 0 && (
-        <p className="text-sm text-gray-400 px-2">No saved queries yet.</p>
+        <p className="text-sm text-gray-500 px-2">No saved queries yet.</p>
       )}
 
       <ul className="space-y-1">
@@ -137,7 +137,7 @@ function HistoryPanel({
               >
                 degraded
               </span>
-              <span className="text-xs text-gray-400">{timeAgo(item.asked_at)}</span>
+              <span className="text-xs text-gray-500">{timeAgo(item.asked_at)}</span>
             </button>
           </li>
         ))}
@@ -148,7 +148,7 @@ function HistoryPanel({
           type="button"
           onClick={() => setExpanded((current) => !current)}
           aria-expanded={expanded}
-          className="mt-1 text-xs font-medium text-gray-400 hover:text-teal-700 px-2 py-1"
+          className="mt-1 text-xs font-medium text-gray-500 hover:text-teal-700 px-2 py-1"
         >
           {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
         </button>
@@ -271,7 +271,7 @@ export default function Query() {
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-5 py-2.5 transition-colors"
+            className="bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-5 py-2.5 transition-colors"
           >
             {loading ? "Asking…" : "Ask"}
           </button>
@@ -284,7 +284,7 @@ export default function Query() {
         <TrendingNews onPick={setQuery} />
 
         <div className="print:hidden mb-8">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Try asking
           </p>
           <div className="flex flex-wrap gap-2">
@@ -388,7 +388,7 @@ export default function Query() {
         )}
 
         <div className="mt-10 pt-6 border-t border-gray-200">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Data sources
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">

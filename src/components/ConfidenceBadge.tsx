@@ -22,7 +22,7 @@ export default function ConfidenceBadge({
       title={`Confidence: ${(score * 100).toFixed(0)}%`}
     >
       {resolved} confidence
-      <span className="opacity-70">· {(score * 100).toFixed(0)}%</span>
+      <span>· {(score * 100).toFixed(0)}%</span>
     </span>
   );
 }

@@ -63,7 +63,7 @@ export default function ConfidenceBreakdown({ breakdown }: { breakdown: Breakdow
                 <tr key={penalty.key}>
                   <th scope="row" className="text-left font-normal text-gray-600 py-0.5">
                     {penalty.label}{" "}
-                    <span className="text-gray-400">— {penalty.why}</span>
+                    <span className="text-gray-500">— {penalty.why}</span>
                   </th>
                   <td className="text-right tabular-nums text-red-700">
                     −{pct(breakdown[penalty.key])}

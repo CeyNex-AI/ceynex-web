@@ -828,12 +828,14 @@ export default function Chat() {
                        disabled:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2
                        focus-visible:outline-teal-600"
           />
+          {/* Keyed apart: React would otherwise keep one <button> and only
+              swap its classes, so Stop faded in from Ask's disabled grey. */}
           {streaming ? (
-            <Button variant="secondary" onClick={() => void stop()} disabled={live?.stopping}>
+            <Button key="stop" variant="secondary" onClick={() => void stop()} disabled={live?.stopping}>
               Stop
             </Button>
           ) : (
-            <Button type="submit" disabled={!question.trim()}>
+            <Button key="ask" type="submit" disabled={!question.trim()}>
               Ask
             </Button>
           )}

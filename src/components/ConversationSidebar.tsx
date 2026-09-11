@@ -86,7 +86,7 @@ export default function ConversationSidebar({
         </p>
       )}
 
-      {loading && <p className="text-sm text-gray-400">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500">Loading…</p>}
 
       {!loading && matching.length === 0 && (
         <p className="text-sm text-gray-500">
@@ -97,7 +97,7 @@ export default function ConversationSidebar({
       <div className="flex-1 overflow-y-auto space-y-3">
         {groups.map((group) => (
           <div key={group.label}>
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-1">
               {group.label}
             </h2>
             <ul className="space-y-0.5">
@@ -146,7 +146,7 @@ export default function ConversationSidebar({
                         aria-label={`${conversation.pinned ? "Unpin" : "Pin"} ${
                           conversation.title ?? "this chat"
                         }`}
-                        className="text-xs text-gray-400 hover:text-teal-600 px-1
+                        className="text-xs text-gray-500 hover:text-teal-700 px-1
                                    focus-visible:outline-2 focus-visible:outline-offset-2
                                    focus-visible:outline-teal-600 rounded"
                       >
@@ -159,7 +159,7 @@ export default function ConversationSidebar({
                           setDraft(conversation.title ?? "");
                         }}
                         aria-label={`Rename ${conversation.title ?? "this chat"}`}
-                        className="text-xs text-gray-400 hover:text-gray-700 px-1
+                        className="text-xs text-gray-500 hover:text-gray-700 px-1
                                    opacity-0 group-hover:opacity-100 focus:opacity-100
                                    focus-visible:outline-2 focus-visible:outline-offset-2
                                    focus-visible:outline-teal-600 rounded"
@@ -170,7 +170,7 @@ export default function ConversationSidebar({
                         type="button"
                         onClick={() => onDelete(conversation.id)}
                         aria-label={`Delete ${conversation.title ?? "this chat"}`}
-                        className="text-xs text-gray-400 hover:text-red-600 px-1
+                        className="text-xs text-gray-500 hover:text-red-600 px-1
                                    opacity-0 group-hover:opacity-100 focus:opacity-100
                                    focus-visible:outline-2 focus-visible:outline-offset-2
                                    focus-visible:outline-teal-600 rounded"

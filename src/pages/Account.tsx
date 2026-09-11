@@ -128,7 +128,7 @@ export default function Account() {
               </span>
             </div>
           )}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Demo login: four fixed accounts, no self-service signup.
           </p>
           <button
@@ -142,7 +142,7 @@ export default function Account() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-900">Notification preferences</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             What you'd be notified about, once a delivery channel exists for it. These are saved
             now; nothing is sent yet.
           </p>
@@ -157,7 +157,7 @@ export default function Account() {
                     onChange={(e) =>
                       setPrefs((current) => (current ? { ...current, [key]: e.target.checked } : current))
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    className="h-4 w-4 rounded border-gray-300 text-teal-700 focus:ring-teal-500"
                   />
                   {PREFERENCE_LABELS[key]}
                 </label>
@@ -171,7 +171,7 @@ export default function Account() {
                 <button
                   type="submit"
                   disabled={prefsSaving}
-                  className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors"
+                  className="bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors"
                 >
                   {prefsSaving ? "Saving..." : "Save"}
                 </button>
@@ -190,7 +190,7 @@ export default function Account() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-900">API keys</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             For programmatic access to the query API. A key authenticates the same way your login
             session does, at your account's current role.
           </p>
@@ -237,7 +237,7 @@ export default function Account() {
                 >
                   <div className="min-w-0">
                     <div className="text-gray-800 truncate">{k.label}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-500">
                       <code>{k.key_prefix}...</code>
                       {k.revoked ? " · revoked" : k.last_used_at ? ` · last used ${new Date(k.last_used_at).toLocaleDateString()}` : " · never used"}
                     </div>
@@ -272,7 +272,7 @@ export default function Account() {
             <button
               type="submit"
               disabled={creating || !newKeyLabel.trim()}
-              className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0"
+              className="bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0"
             >
               {creating ? "Creating..." : "New key"}
             </button>

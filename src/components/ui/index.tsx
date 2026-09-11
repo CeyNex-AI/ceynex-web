@@ -35,7 +35,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const BUTTON_VARIANTS: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white",
+  primary: "bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white",
   secondary:
     "bg-white border border-gray-300 hover:bg-gray-50 disabled:text-gray-400 text-gray-700",
   ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:text-gray-300",

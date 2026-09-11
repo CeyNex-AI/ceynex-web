@@ -49,7 +49,7 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5">
       <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-      {subtitle && <p className="text-xs text-gray-400 mt-0.5 mb-3">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-gray-500 mt-0.5 mb-3">{subtitle}</p>}
       {!subtitle && <div className="mt-3" />}
       {children}
     </div>
@@ -65,8 +65,8 @@ const PROVIDER_STATUS_STYLE: Record<
   // Amber, not red: calls are deliberately being skipped to protect the
   // daily spend cap (R5) -- this is not GPT-4o itself failing.
   cap_reached: { dot: "bg-amber-500", text: "text-amber-700", label: "spend cap reached" },
-  not_configured: { dot: "bg-gray-300", text: "text-gray-400", label: "not configured" },
-  unknown: { dot: "bg-gray-300", text: "text-gray-400", label: "not checked yet" },
+  not_configured: { dot: "bg-gray-300", text: "text-gray-500", label: "not configured" },
+  unknown: { dot: "bg-gray-300", text: "text-gray-500", label: "not checked yet" },
 };
 
 /** One provider's row in the LLM status card -- richer than StatusRow's
@@ -83,12 +83,12 @@ function ProviderStatusRow({ label, item }: { label: string; item: ProviderStatu
       <div className="text-right min-w-0">
         <span className={`text-xs font-medium ${style.text}`}>{style.label}</span>
         {item.status === "down" && item.last_error && (
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate max-w-[220px]" title={item.last_error}>
+          <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[220px]" title={item.last_error}>
             {item.last_error}
           </p>
         )}
         {item.last_checked_at && (item.status === "ok" || item.status === "down") && (
-          <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(item.last_checked_at)}</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">{timeAgo(item.last_checked_at)}</p>
         )}
       </div>
     </div>
@@ -122,7 +122,7 @@ function LLMStatusCard() {
           {error}
         </p>
       )}
-      {!status && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {!status && !error && <p className="text-sm text-gray-500">Loading…</p>}
       {status && (
         <>
           <ProviderStatusRow label="OpenAI (GPT-4o)" item={status.openai} />
@@ -168,9 +168,9 @@ function ModelsCard() {
           {error}
         </p>
       )}
-      {!models && !error && <p className="text-sm text-gray-400">Loading…</p>}
+      {!models && !error && <p className="text-sm text-gray-500">Loading…</p>}
       {models && models.length === 0 && (
-        <p className="text-sm text-gray-400">No models registered yet.</p>
+        <p className="text-sm text-gray-500">No models registered yet.</p>
       )}
       {models && models.length > 0 && (
         <ul className="space-y-2">
@@ -184,9 +184,9 @@ function ModelsCard() {
               >
                 <div className="min-w-0">
                   <p className="text-gray-800 truncate">
-                    {m.sector}/{m.item} <span className="text-gray-400">· {m.target}</span>
+                    {m.sector}/{m.item} <span className="text-gray-500">· {m.target}</span>
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {m.model_class} · {m.version}
                     {m.metrics?.mape !== undefined && ` · MAPE ${(m.metrics.mape * 100).toFixed(1)}%`}
                   </p>
@@ -254,7 +254,7 @@ function PipelineCard() {
           type="button"
           disabled={ingesting !== null}
           onClick={() => handleIngest("apparel", ["edb", "jaaf"])}
-          className="text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 rounded-md px-3 py-1.5"
+          className="text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 rounded-md px-3 py-1.5"
         >
           {ingesting === "apparel" ? "Running…" : "Run ingest (EDB + JAAF)"}
         </button>
@@ -273,8 +273,8 @@ function PipelineCard() {
           {error}
         </p>
       )}
-      {!runs && !error && <p className="text-sm text-gray-400">Loading…</p>}
-      {runs && runs.length === 0 && <p className="text-sm text-gray-400">No ingest runs yet.</p>}
+      {!runs && !error && <p className="text-sm text-gray-500">Loading…</p>}
+      {runs && runs.length === 0 && <p className="text-sm text-gray-500">No ingest runs yet.</p>}
       {runs && runs.length > 0 && (
         <ul className="space-y-1.5">
           {runs.slice(0, 8).map((r) => (
@@ -289,13 +289,13 @@ function PipelineCard() {
               className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
             >
               <span className="text-gray-800 truncate">{r.source_id}</span>
-              <span className="text-xs text-gray-400 text-right">{r.rows_written.toLocaleString()} rows</span>
+              <span className="text-xs text-gray-500 text-right">{r.rows_written.toLocaleString()} rows</span>
               <span
                 className={`text-xs font-medium text-right ${r.status === "success" ? "text-emerald-700" : "text-red-700"}`}
               >
                 {r.status}
               </span>
-              <span className="text-xs text-gray-400 text-right">{timeAgo(r.started_at)}</span>
+              <span className="text-xs text-gray-500 text-right">{timeAgo(r.started_at)}</span>
             </li>
           ))}
         </ul>
@@ -344,8 +344,8 @@ function DQFlagsCard() {
           {error}
         </p>
       )}
-      {!flags && !error && <p className="text-sm text-gray-400">Loading…</p>}
-      {flags && flags.length === 0 && <p className="text-sm text-gray-400">No flags recorded.</p>}
+      {!flags && !error && <p className="text-sm text-gray-500">Loading…</p>}
+      {flags && flags.length === 0 && <p className="text-sm text-gray-500">No flags recorded.</p>}
       {flags && flags.length > 0 && (
         <ul className="space-y-2">
           {flags.map((f) => (
@@ -364,13 +364,13 @@ function DQFlagsCard() {
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500">
                   {f.source_a} {f.value_a ?? "?"} vs {f.source_b} {f.value_b ?? "?"}
                   {f.pct_diff !== null && ` (${f.pct_diff.toFixed(1)}% diff)`}
                 </p>
               </div>
               {f.resolved ? (
-                <span className="shrink-0 text-xs text-gray-400">resolved</span>
+                <span className="shrink-0 text-xs text-gray-500">resolved</span>
               ) : (
                 <button
                   type="button"
@@ -448,19 +448,19 @@ export default function Admin() {
               {healthError}
             </p>
           )}
-          {!healthError && !health && <p className="text-sm text-gray-400">Checking system status…</p>}
+          {!healthError && !health && <p className="text-sm text-gray-500">Checking system status…</p>}
           {health && (
             <>
               <StatusRow label="Postgres" up={health.postgres} />
               <StatusRow label="Neo4j" up={health.neo4j} />
               <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
               {health.detail?.fact_trade_rows !== undefined && (
-                <div className="pt-3 mt-1 text-xs text-gray-400">
+                <div className="pt-3 mt-1 text-xs text-gray-500">
                   {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
                 </div>
               )}
               {health.detail?.reasoning && (
-                <div className="text-xs text-gray-400">{health.detail.reasoning}</div>
+                <div className="text-xs text-gray-500">{health.detail.reasoning}</div>
               )}
             </>
           )}

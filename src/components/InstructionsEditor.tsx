@@ -85,7 +85,7 @@ export default function InstructionsEditor() {
                    focus-visible:outline-2 focus-visible:outline-offset-2
                    focus-visible:outline-teal-600 disabled:bg-gray-100"
       />
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-xs text-gray-500 mt-1">
         {content.length} / {max} characters
       </p>
 
@@ -99,7 +99,7 @@ export default function InstructionsEditor() {
               setEnabled(e.target.checked);
               setSaved(false);
             }}
-            className="rounded border-gray-300 text-teal-600
+            className="rounded border-gray-300 text-teal-700
                        focus-visible:outline-2 focus-visible:outline-offset-2
                        focus-visible:outline-teal-600"
           />

@@ -79,7 +79,7 @@ function EvidenceItem({
         >
           {item.source_id}
         </span>
-        {item.period && <span className="text-xs text-gray-400">{item.period}</span>}
+        {item.period && <span className="text-xs text-gray-500">{item.period}</span>}
       </div>
       {web && (
         <p className="text-xs text-amber-800 mb-1">
@@ -96,7 +96,7 @@ function EvidenceItem({
           type="button"
           onClick={() => setShowDetail((s) => !s)}
           aria-expanded={showDetail}
-          className="mt-1.5 text-xs text-teal-600 hover:text-teal-800 underline underline-offset-2"
+          className="mt-1.5 text-xs text-teal-700 hover:text-teal-900 underline underline-offset-2"
         >
           {showDetail ? "Hide query" : "Show query"}
         </button>
@@ -112,7 +112,7 @@ function EvidenceItem({
           target="_blank"
           rel="noreferrer"
           className={`mt-1.5 block text-xs underline underline-offset-2 ${
-            web ? "text-amber-800 hover:text-amber-900" : "text-teal-600 hover:text-teal-800"
+            web ? "text-amber-800 hover:text-amber-900" : "text-teal-700 hover:text-teal-900"
           }`}
         >
           {web ? item.detail || "Open the page" : "Source link"}

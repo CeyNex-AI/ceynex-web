@@ -39,7 +39,7 @@ export default function AnswerFeedback({ messageId }: { messageId: number }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs print:hidden">
-      <span className="text-gray-400">Was this useful?</span>
+      <span className="text-gray-500">Was this useful?</span>
       {[
         { value: 1, glyph: "👍", label: "Yes, this was useful" },
         { value: -1, glyph: "👎", label: "No, this was not useful" },

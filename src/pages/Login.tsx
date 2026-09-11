@@ -148,18 +148,18 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
+              className="w-full bg-teal-700 hover:bg-teal-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
             >
               {submitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-gray-400">
+          <p className="mt-4 text-center text-xs text-gray-500">
             Demo accounts, password <span className="font-mono">{DEMO_PASSWORD}</span> for all.
           </p>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 text-center">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 text-center">
               Try a demo role
             </p>
             <div className="flex flex-wrap justify-center gap-1.5">

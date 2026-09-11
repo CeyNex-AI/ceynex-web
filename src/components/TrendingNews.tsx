@@ -45,9 +45,9 @@ export default function TrendingNews({ onPick }: { onPick: (query: string) => vo
   return (
     <div className="print:hidden mb-6">
       <div className="flex items-baseline gap-2 mb-2">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Trending now</p>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trending now</p>
         {data.computed_at && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-500">
             {/* A six-hour-old panel labelled "trending now" would be a lie, so a
                 stale one says how old it is instead of hiding it. */}
             {data.status === "stale"
@@ -60,7 +60,7 @@ export default function TrendingNews({ onPick }: { onPick: (query: string) => vo
       <div className="space-y-2">
         {scopes.map(([scope, topics]) => (
           <div key={scope} className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide w-16 shrink-0">
+            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide w-16 shrink-0">
               {SCOPE_LABELS[scope] ?? scope}
             </span>
             {topics.map((topic) => (

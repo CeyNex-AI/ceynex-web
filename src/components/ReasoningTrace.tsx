@@ -56,10 +56,10 @@ const STATUS_ICON: Record<Status, string> = {
 };
 
 const STATUS_CLASS: Record<Status, string> = {
-  running: "text-gray-400",
-  ok: "text-teal-600",
+  running: "text-gray-500",
+  ok: "text-teal-700",
   failed: "text-red-600",
-  empty: "text-gray-400",
+  empty: "text-gray-500",
 };
 
 const AGENT_LABEL: Record<string, string> = {
@@ -326,7 +326,12 @@ function summarise(rows: Row[], totalMs?: number): string {
   if (totalMs) parts.push(`Thought for ${ms(totalMs)}`);
   if (agents.size) parts.push(`${agents.size} ${agents.size === 1 ? "analysis" : "analyses"}`);
   if (queries.length) parts.push(`${queries.length} ${queries.length === 1 ? "query" : "queries"}`);
-  return parts.join(" · ") || "No steps recorded";
+  if (parts.length) return parts.join(" · ");
+  // A discussion has steps — its classification, its model call, its grounding
+  // verdict — but no fan-out to time and no queries to count. Saying "no steps"
+  // beside a trace that opens to show three was a contradiction.
+  if (rows.length) return `${rows.length} ${rows.length === 1 ? "step" : "steps"}`;
+  return "No steps recorded";
 }
 
 export default function ReasoningTrace({
@@ -385,7 +390,7 @@ export default function ReasoningTrace({
               aria-hidden="true"
             />
           ) : (
-            <span className="text-teal-600" aria-hidden="true">
+            <span className="text-teal-700" aria-hidden="true">
               ✓
             </span>
           )}
@@ -393,7 +398,7 @@ export default function ReasoningTrace({
             {running ? "Working…" : loading ? "Loading steps…" : summary}
           </span>
         </span>
-        <span className="text-xs text-gray-400">{open ? "Hide" : "Show"} steps</span>
+        <span className="text-xs text-gray-500">{open ? "Hide" : "Show"} steps</span>
       </button>
 
       {/*
@@ -417,14 +422,14 @@ export default function ReasoningTrace({
                   <span className="text-gray-800">{row.label}</span>
                   {row.detail && <span className="text-gray-500"> — {row.detail}</span>}
                   {row.node && row.icon !== "◐" && (
-                    <span className="text-gray-400"> ({agentName(row.node)})</span>
+                    <span className="text-gray-500"> ({agentName(row.node)})</span>
                   )}
                   {row.meta && (
-                    <span className="block text-xs text-gray-400 truncate">{row.meta}</span>
+                    <span className="block text-xs text-gray-500 truncate">{row.meta}</span>
                   )}
                 </span>
                 {row.elapsedMs !== undefined && (
-                  <span className="text-xs text-gray-400 tabular-nums shrink-0">
+                  <span className="text-xs text-gray-500 tabular-nums shrink-0">
                     {ms(row.elapsedMs)}
                   </span>
                 )}
@@ -450,7 +455,7 @@ export default function ReasoningTrace({
             </li>
           ))}
           {running && (
-            <li className="px-3 py-2 text-gray-400 flex items-center gap-2">
+            <li className="px-3 py-2 text-gray-500 flex items-center gap-2">
               <span className="motion-safe:animate-pulse" aria-hidden="true">
                 ○
               </span>

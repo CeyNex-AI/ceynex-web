@@ -46,7 +46,7 @@ export function UserTurn({
 }) {
   return (
     <li className="flex flex-col items-end gap-1">
-      <p className="max-w-[85%] bg-teal-600 text-white rounded-lg rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap">
+      <p className="max-w-[85%] bg-teal-700 text-white rounded-lg rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap">
         {content}
       </p>
       {interpretedAs && interpretedAs !== content && (
@@ -96,7 +96,7 @@ function SaveToggle({ historyId, initiallySaved }: { historyId: number; initiall
                    bg-white hover:bg-gray-50 disabled:text-gray-400 focus-visible:outline-2
                    focus-visible:outline-offset-2 focus-visible:outline-teal-600"
       >
-        <span aria-hidden="true" className={saved ? "text-teal-600" : "text-gray-400"}>
+        <span aria-hidden="true" className={saved ? "text-teal-700" : "text-gray-500"}>
           {saved ? "★" : "☆"}
         </span>
         {saved ? "Saved to History" : "Save to History"}
@@ -111,7 +111,7 @@ function SaveToggle({ historyId, initiallySaved }: { historyId: number; initiall
 function UsageFooter({ usage }: { usage: UsageSummary }) {
   const cached = usage.cache_hits > 0 ? `, ${usage.cache_hits} cached` : "";
   return (
-    <p className="text-xs text-gray-400 tabular-nums">
+    <p className="text-xs text-gray-500 tabular-nums">
       {usage.tokens_in.toLocaleString()} in / {usage.tokens_out.toLocaleString()} out ·{" "}
       {usage.cost_usd > 0 ? `$${usage.cost_usd.toFixed(6)}` : "$0"} ·{" "}
       {usage.calls} call{usage.calls === 1 ? "" : "s"}
@@ -300,7 +300,7 @@ export function AssistantTurn({
         >
           {draft}
           {running && (
-            <span className="motion-safe:animate-pulse text-gray-400" aria-hidden="true">
+            <span className="motion-safe:animate-pulse text-gray-500" aria-hidden="true">
               {" "}▍
             </span>
           )}

@@ -90,7 +90,7 @@ export default function ClarifyCard({
                                 focus-visible:outline-2 focus-visible:outline-offset-2
                                 focus-visible:outline-teal-600 disabled:opacity-50 ${
                                   on
-                                    ? "bg-teal-600 text-white ring-teal-600"
+                                    ? "bg-teal-700 text-white ring-teal-700"
                                     : "bg-white text-gray-700 ring-gray-300 hover:bg-gray-50"
                                 }`}
                   >
