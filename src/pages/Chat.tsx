@@ -79,8 +79,14 @@ interface LiveTurn {
   dropped?: boolean;
   /** The gate asked one question back instead of answering. Not a failure. */
   clarify?: ClarifyPrompt;
-  /** Stopped at the reader's request. Nothing from the turn was stored. */
-  stopped?: boolean;
+  /**
+   * How the turn stopped. `"cancelled"`: the server confirmed it, and nothing
+   * was stored. `"detached"`: the stop request never reached the server, so we
+   * only stopped listening — a signed-in turn runs on and will be stored.
+   */
+  stopped?: "cancelled" | "detached";
+  /** Stop was pressed and the server has not yet answered with `done`. */
+  stopping?: boolean;
   /** The connection dropped and a resume is under way. */
   reconnecting?: { attempt: number; of: number } | null;
   /** The answer so far — whole, grounded sentences as the server released them. */
@@ -113,6 +119,8 @@ interface TurnInProgress extends FinishedTurn {
   events: TraceEvent[];
   /** From the `start` frame — what Stop names when it asks the server to stop. */
   requestId?: string;
+  /** Stop was pressed before `start` named the turn; sent the moment it does. */
+  stopRequested?: boolean;
 }
 
 export default function Chat() {
@@ -232,6 +240,9 @@ export default function Chat() {
    * response for turn N can only ever land on turn N.
    */
   function loadNews(asked: string, turnKey: string) {
+    // `/api/news/search` needs three characters. Below that there is nothing to
+    // search for, and asking anyway turned its 422 into "news is unavailable".
+    if (asked.trim().length < 3) return;
     setNews((current) => ({
       ...current,
       [turnKey]: { articles: null, source: null, loading: true },
@@ -285,6 +296,7 @@ export default function Chat() {
         }
         if (event.kind === "start" && typeof event.request_id === "string") {
           turn.requestId = event.request_id;
+          if (turn.stopRequested) void requestStop(event.request_id);
         }
         turn.events.push(event);
         if (event.kind === "turn") {
@@ -324,7 +336,8 @@ export default function Chat() {
                 ...current,
                 answer: frame.answer,
                 usage: frame.usage,
-                stopped: Boolean(frame.cancelled),
+                stopped: frame.cancelled ? "cancelled" : current.stopped,
+                stopping: false,
                 reconnecting: null,
                 done: true,
               }
@@ -363,7 +376,13 @@ export default function Chat() {
     }
   }
 
-  const [shareLink, setShareLink] = useState<string | null>(null);
+  /**
+   * Read-only links minted this session, keyed by conversation. One link held
+   * for the whole page survived a switch: after sharing one conversation, every
+   * other one offered "Copy link" with the first one's URL.
+   */
+  const [shareLinks, setShareLinks] = useState<Record<number, string>>({});
+  const shareLink = activeId !== null ? shareLinks[activeId] : undefined;
 
   /** Markdown of the whole conversation plus an evidence appendix (§7). */
   function exportMarkdown() {
@@ -393,7 +412,8 @@ export default function Chat() {
     try {
       const result = await shareConversation(activeId, true);
       if (result.token) {
-        setShareLink(`${window.location.origin}/shared/${result.token}`);
+        const link = `${window.location.origin}/shared/${result.token}`;
+        setShareLinks((current) => ({ ...current, [activeId]: link }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create a link.");
@@ -474,13 +494,19 @@ export default function Chat() {
     const controller = new AbortController();
     abort.current = controller;
     const key = `turn-${++turnCounter.current}`;
+    // The question being re-answered is the user row before this answer. The
+    // server's `turn` frame names it too; this is the fallback for related news.
+    const asked = [...messages]
+      .reverse()
+      .find((m) => m.role === "user" && m.seq < message.seq);
+    const question = asked?.effective_query ?? asked?.content ?? "";
     inProgress.current = {
       key,
-      question: "",
+      question,
       events: [],
       mode: message.mode === "discuss" ? "discuss" : "analyse",
     };
-    setLive({ key, question: "", events: [], done: false, regenerating: message.id });
+    setLive({ key, question, events: [], done: false, regenerating: message.id });
     try {
       await streamRegenerate(message.id, handlers(), controller.signal);
     } catch (err) {
@@ -493,17 +519,35 @@ export default function Chat() {
   }
 
   async function stop() {
-    const requestId = inProgress.current?.requestId;
-    if (requestId) {
-      try {
-        await cancelTurn(requestId);
-        return; // the stream's own `done` frame ends the turn
-      } catch {
-        /* fall through to aborting */
-      }
+    const turn = inProgress.current;
+    if (!turn) return;
+    setLive((current) => (current ? { ...current, stopping: true } : current));
+    if (!turn.requestId) {
+      // Pressed before the `start` frame named the turn. The request goes out
+      // the moment it does (see the start handler); dropping the socket now
+      // would only stop us listening while the server ran on and saved the
+      // answer under a message saying nothing was saved.
+      turn.stopRequested = true;
+      return;
     }
-    abort.current?.abort();
-    setLive((current) => (current ? { ...current, stopped: true, done: true } : current));
+    await requestStop(turn.requestId);
+  }
+
+  /**
+   * Ask the server to stop `requestId`. On success the stream's own `done`
+   * frame (`cancelled: true`) ends the turn. If the request cannot be
+   * delivered, the server never heard us: a signed-in turn will finish and be
+   * stored, so all that can honestly be done is stop listening and say so.
+   */
+  async function requestStop(requestId: string) {
+    try {
+      await cancelTurn(requestId);
+    } catch {
+      abort.current?.abort();
+      setLive((current) =>
+        current ? { ...current, stopped: "detached", stopping: false, done: true } : current,
+      );
+    }
   }
 
   const rows = groupVersions(messages);
@@ -526,6 +570,11 @@ export default function Chat() {
           }}
           onDelete={(id) => {
             void deleteConversation(id).then(() => {
+              setShareLinks((current) => {
+                const next = { ...current };
+                delete next[id];
+                return next;
+              });
               if (activeId === id) startNew();
               return reloadConversations();
             });
@@ -693,9 +742,34 @@ export default function Chat() {
                   {live.reconnecting.of})…
                 </li>
               )}
-              {live.stopped && (
+              {live.stopping && !live.done && (
+                <li role="status" aria-live="polite" className="text-sm text-gray-600">
+                  Stopping…
+                </li>
+              )}
+              {live.stopped === "cancelled" && (
                 <li role="status" className="text-sm text-gray-600">
                   Stopped. Nothing from this question was saved.
+                </li>
+              )}
+              {live.stopped === "detached" && (
+                <li
+                  role="status"
+                  className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3 flex flex-wrap items-center gap-3"
+                >
+                  <span>
+                    Stopped listening. The stop request did not reach the server, so it
+                    may finish and save this answer — reload the conversation to check.
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      if (activeId !== null) void openConversation(activeId);
+                    }}
+                  >
+                    Reload conversation
+                  </Button>
                 </li>
               )}
               {live.dropped && (
@@ -747,7 +821,7 @@ export default function Chat() {
                        focus-visible:outline-teal-600"
           />
           {streaming ? (
-            <Button variant="secondary" onClick={() => void stop()}>
+            <Button variant="secondary" onClick={() => void stop()} disabled={live?.stopping}>
               Stop
             </Button>
           ) : (
