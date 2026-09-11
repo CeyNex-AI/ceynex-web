@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import ScenarioWorkbench from "./pages/ScenarioWorkbench";
 import SharedConversation from "./pages/SharedConversation";
 import QueryWorkspace from "./pages/QueryWorkspace";
 
@@ -36,6 +37,9 @@ function NavBar() {
       )}
       <NavLink to="/query" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Query
+      </NavLink>
+      <NavLink to="/scenario" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+        Scenario
       </NavLink>
       <NavLink to="/help" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Help
@@ -109,6 +113,14 @@ function App() {
               element={
                 <RequireAuth>
                   <QueryWorkspace />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/scenario"
+              element={
+                <RequireAuth>
+                  <ScenarioWorkbench />
                 </RequireAuth>
               }
             />
