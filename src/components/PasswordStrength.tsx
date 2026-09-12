@@ -43,7 +43,7 @@ export default function PasswordStrength({ password }: { password: string }) {
         ))}
       </div>
       <p className="text-xs mt-1">
-        <span className="text-gray-400">{label}</span>
+        <span className="text-gray-500">{label}</span>
         {pwned > 0 && (
           <span className="text-red-600">
             {" "}

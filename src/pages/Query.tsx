@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
+import FreshnessRibbon from "../components/FreshnessRibbon";
 import KnowledgeGraphPanel from "../components/KnowledgeGraphPanel";
 import NewsPanel from "../components/NewsPanel";
 import TrendingNews from "../components/TrendingNews";
@@ -59,7 +60,7 @@ function HistoryPanel({
   return (
     <div className="print:hidden mb-8">
       <div className="flex items-center gap-3 mb-2">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           {savedOnly ? "Saved queries" : "Recent queries"}
         </p>
         {items.length > COLLAPSED_HISTORY_COUNT && (
@@ -71,7 +72,7 @@ function HistoryPanel({
             type="button"
             onClick={() => setExpanded((current) => !current)}
             aria-expanded={expanded}
-            className="text-xs font-medium text-gray-400 hover:text-teal-700"
+            className="text-xs font-medium text-gray-500 hover:text-teal-700"
           >
             {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
           </button>
@@ -86,7 +87,7 @@ function HistoryPanel({
               className={`text-[10px] font-medium uppercase tracking-wide rounded-full px-2 py-0.5 ${
                 (tab === "saved") === savedOnly
                   ? "bg-teal-50 text-teal-700"
-                  : "text-gray-400 hover:text-gray-600"
+                  : "text-gray-500 hover:text-gray-600"
               }`}
             >
               {tab}
@@ -96,7 +97,7 @@ function HistoryPanel({
       </div>
 
       {items.length === 0 && (
-        <p className="text-sm text-gray-400 px-2">No saved queries yet.</p>
+        <p className="text-sm text-gray-500 px-2">No saved queries yet.</p>
       )}
 
       <ul className="space-y-1">
@@ -136,7 +137,7 @@ function HistoryPanel({
               >
                 degraded
               </span>
-              <span className="text-xs text-gray-400">{timeAgo(item.asked_at)}</span>
+              <span className="text-xs text-gray-500">{timeAgo(item.asked_at)}</span>
             </button>
           </li>
         ))}
@@ -147,7 +148,7 @@ function HistoryPanel({
           type="button"
           onClick={() => setExpanded((current) => !current)}
           aria-expanded={expanded}
-          className="mt-1 text-xs font-medium text-gray-400 hover:text-teal-700 px-2 py-1"
+          className="mt-1 text-xs font-medium text-gray-500 hover:text-teal-700 px-2 py-1"
         >
           {expanded ? "Show fewer" : `Show ${hiddenCount} more`}
         </button>
@@ -250,9 +251,14 @@ export default function Query() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Ask CeyNex</h1>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-2">
           Ask about Sri Lanka's tea, cinnamon, and apparel export performance.
         </p>
+        {/* The same one line the chat page shows: how current the data behind
+            any answer on this page is. Silent when unavailable. */}
+        <div className="mb-6 print:hidden">
+          <FreshnessRibbon />
+        </div>
 
         <form onSubmit={handleSubmit} className="print:hidden flex gap-2 mb-3">
           <input
@@ -278,7 +284,7 @@ export default function Query() {
         <TrendingNews onPick={setQuery} />
 
         <div className="print:hidden mb-8">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Try asking
           </p>
           <div className="flex flex-wrap gap-2">
@@ -325,7 +331,10 @@ export default function Query() {
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <p className="text-sm text-gray-500 italic">"{response.query}"</p>
                   <div className="flex items-center gap-2 shrink-0">
-                    <ConfidenceBadge score={response.final_confidence} />
+                    <ConfidenceBadge
+                      score={response.final_confidence}
+                      band={response.confidence_band}
+                    />
                     <button
                       type="button"
                       onClick={() => window.print()}
@@ -336,6 +345,17 @@ export default function Query() {
                   </div>
                 </div>
                 <p className="text-gray-800 leading-relaxed">{response.final_answer}</p>
+                {response.unanswered.length > 0 && (
+                  /* SRS 3.4.3: the orchestrator must say which part of a
+                     question it could not answer rather than silently omitting
+                     it. The backend has always sent this list; the classic page
+                     dropped it in queryApi.ts and so met the requirement only
+                     on the chat surface. */
+                  <p className="mt-3 text-sm text-gray-500">
+                    <span className="font-medium text-gray-600">Not answered: </span>
+                    {response.unanswered.join("; ")}
+                  </p>
+                )}
                 {response.degraded && (
                   <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 inline-block">
                     Showing figures and evidence only. A natural-language explanation isn't available.
@@ -368,7 +388,7 @@ export default function Query() {
         )}
 
         <div className="mt-10 pt-6 border-t border-gray-200">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Data sources
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">

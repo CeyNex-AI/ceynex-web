@@ -37,7 +37,7 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
     <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between mb-2">
         <h2 className="cx-panel-title">Forecast</h2>
-        <span className="text-xs text-gray-400">shaded band = uncertainty interval</span>
+        <span className="text-xs text-gray-500">shaded band = uncertainty interval</span>
       </div>
       {/* The chart is an SVG rendered by Recharts with no text equivalent of
        * its own -- a screen reader gets nothing from it. aria-hidden pulls it

@@ -154,13 +154,13 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
     <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <h2 className="cx-panel-title">Knowledge graph</h2>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-500">
           {counts.nodes} nodes · {counts.edges} connections
           {graph.truncated && " · showing the largest"}
         </span>
       </div>
 
-      <p className="print:hidden text-xs text-gray-400 mb-2">
+      <p className="print:hidden text-xs text-gray-500 mb-2">
         Click a node to trace its connections and pull in its neighbours. Drag to pan,
         scroll to zoom.
       </p>
@@ -220,7 +220,7 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
             type="button"
             onClick={() => setShowQueries((s) => !s)}
             aria-expanded={showQueries}
-            className="text-xs text-teal-600 hover:text-teal-800 underline underline-offset-2"
+            className="text-xs text-teal-700 hover:text-teal-900 underline underline-offset-2"
           >
             {showQueries ? "Hide the queries behind this graph" : "Show the queries behind this graph"}
           </button>
@@ -251,13 +251,13 @@ function NodeDetail({ node, loading }: { node: GraphNode; loading: boolean }) {
           {node.label}
         </span>
         <span className="text-sm font-medium text-gray-900">{node.name}</span>
-        {loading && <span className="text-xs text-gray-400">loading connections…</span>}
+        {loading && <span className="text-xs text-gray-500">loading connections…</span>}
       </div>
       {entries.length > 0 && (
         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
           {entries.map(([key, value]) => (
             <div key={key} className="contents">
-              <dt className="text-gray-400">{key}</dt>
+              <dt className="text-gray-500">{key}</dt>
               <dd className="text-gray-600">{String(value)}</dd>
             </div>
           ))}

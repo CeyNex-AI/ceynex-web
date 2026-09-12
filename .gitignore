@@ -39,3 +39,7 @@ ceynex_m3_context.md
 /EDB_Permission_Letter.txt
 /CeyNex - EDB Permission Email.docx
 /CeyNex - EDB Permission Request Letter.docx
+
+# Playwright output
+e2e/results
+e2e/report

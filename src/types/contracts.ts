@@ -10,7 +10,28 @@
  * API response shape moves again.
  */
 
-export type SourceId = "UN_COMTRADE" | "WITS" | "FAOSTAT" | "CBSL" | "JAAF" | "EDB" | "KG" | "MODEL";
+import type { ConfidenceBand } from "../lib/confidence";
+
+/**
+ * Mirrors `SourceId` in ceynex-contracts, which is a plain `str` there so a new
+ * source needs no contract change — but a closed union here, so the frontend
+ * still fails a type-check rather than silently rendering an unknown chip.
+ *
+ * `POLICY` was missing: the backend has emitted it since policy retrieval (D10)
+ * shipped, via `agents/common.py::evidence_from_policy`. `WEB` is reserved for
+ * the general web search (D14).
+ */
+export type SourceId =
+  | "UN_COMTRADE"
+  | "WITS"
+  | "FAOSTAT"
+  | "CBSL"
+  | "JAAF"
+  | "EDB"
+  | "KG"
+  | "MODEL"
+  | "POLICY"
+  | "WEB";
 
 export interface Evidence {
   source_id: SourceId;
@@ -38,10 +59,28 @@ export interface QueryResponse {
   query: string;
   final_answer: string;
   final_confidence: number;
+  /**
+   * The band the *backend* computed, not one derived here. `lib/confidence.ts`
+   * mirrors `confidence_band()`'s thresholds and says to keep the two in sync;
+   * preferring the server's answer means there is nothing to keep in sync on
+   * this path. Optional because the field is new — an older backend omits it
+   * and the client falls back to computing it.
+   */
+  confidence_band?: ConfidenceBand;
   merged_evidence: Evidence[];
   forecast?: ForecastPoint[];
   degraded: boolean;
   graph?: AnswerGraph;
+  /** Which agents actually contributed, after out-of-scope suppression. */
+  agents_used: string[];
+  route: string[];
+  sectors: string[];
+  /**
+   * The parts of the question that could not be answered. SRS 3.4.3 requires
+   * the system to name these rather than silently omit them, so this is a
+   * requirement being met, not a detail — it was on the wire and dropped.
+   */
+  unanswered: string[];
 }
 
 /**

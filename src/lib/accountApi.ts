@@ -1,5 +1,5 @@
 import { getToken, setToken } from "./tokenStorage";
-import { apiFetch } from "./apiFetch";
+import { apiFetch, apiJson } from "./apiFetch";
 
 /**
  * Real GET/PUT /api/account/preferences and the API-key routes, proxied
@@ -145,4 +145,71 @@ export async function deleteAccountApi(currentPassword: string): Promise<void> {
   if (res.status === 403) throw new Error("Current password is incorrect.");
   if (res.status === 409) throw new Error("You're the last admin — make someone else an admin first.");
   throw new Error(`Couldn't delete the account (${res.status}).`);
+}
+
+// --- usage and cost (backend deviation D15) ---------------------------------
+
+export interface UsageRollup {
+  key: string;
+  calls: number;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+}
+
+export interface UsageSummary {
+  days: number;
+  scope: "user" | "all";
+  by_day: UsageRollup[];
+  by_role: UsageRollup[];
+  total_cost_usd: number;
+  total_calls: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+}
+
+export interface UsageLimits {
+  limits: UsageRollup[];
+  daily_spend_cap_usd: number;
+  spent_today_usd: number;
+  /** The cap is per uvicorn worker, so real spend can reach worker_count times it. */
+  cap_is_per_worker: boolean;
+  worker_count: number;
+  /** This reader's own daily model budget (D16); 0 when none is set. */
+  per_user_daily_cap_usd: number;
+  spent_today_by_you_usd: number;
+  /** The next 00:00 UTC, when both daily limits start again. */
+  resets_at: string | null;
+  your_budget_spent: boolean;
+  deployment_cap_spent: boolean;
+}
+
+export interface UserInstruction {
+  content: string;
+  enabled: boolean;
+  max_chars: number;
+}
+
+export function fetchUsage(days = 30, scope: "user" | "all" = "user"): Promise<UsageSummary> {
+  const path = scope === "all" ? "/api/usage/all" : "/api/usage/summary";
+  return apiJson<UsageSummary>(`${path}?days=${days}`, { auth: true });
+}
+
+export function fetchUsageLimits(): Promise<UsageLimits> {
+  return apiJson<UsageLimits>("/api/usage/limits", { auth: true });
+}
+
+export function fetchInstructions(): Promise<UserInstruction> {
+  return apiJson<UserInstruction>("/api/account/instructions", { auth: true });
+}
+
+export function saveInstructions(
+  content: string,
+  enabled: boolean,
+): Promise<UserInstruction> {
+  return apiJson<UserInstruction>("/api/account/instructions", {
+    method: "PUT",
+    auth: true,
+    body: { content, enabled },
+  });
 }

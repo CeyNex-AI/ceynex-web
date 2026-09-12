@@ -167,7 +167,10 @@ body {
 
 /* ---- buttons ------------------------------------------------------------ */
 
-/* Classic (default): the original solid-teal button this app has always had. */
+/* Classic (default): the original solid-teal button this app has always had,
+ * one step darker than it started. White on teal-600 is 3.66:1, under WCAG AA's
+ * 4.5:1 for text (SRS 3.2.3), and axe flagged every primary button for it;
+ * teal-700 passes, and hover goes one darker again. */
 .cx-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -176,13 +179,13 @@ body {
   font-family: var(--font-sans);
   font-weight: 500;
   color: #fff;
-  background: var(--color-teal-600);
+  background: var(--color-teal-700);
   border: none;
   border-radius: 6px;
   transition: background-color 0.15s ease;
 }
 .cx-btn-primary:hover:not(:disabled) {
-  background: var(--color-teal-700);
+  background: var(--color-teal-800);
 }
 .cx-btn-primary:disabled {
   background: var(--color-gray-300);

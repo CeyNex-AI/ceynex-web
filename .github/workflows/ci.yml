@@ -1,4 +1,8 @@
 # ceynex-web CI: lint, the vitest suite, and the production build.
+#
+# The Playwright suite in e2e/ is deliberately not here: it drives the
+# production bundle against a running ceynex-core API over a loaded stack (see
+# e2e/README.md), which a runner does not have.
 
 name: ci
 

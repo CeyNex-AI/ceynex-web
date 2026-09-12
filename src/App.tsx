@@ -11,7 +11,9 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import Query from "./pages/Query";
+import QueryWorkspace from "./pages/QueryWorkspace";
+import ScenarioWorkbench from "./pages/ScenarioWorkbench";
+import SharedConversation from "./pages/SharedConversation";
 import Signup from "./pages/Signup";
 
 function navLinkClass(isActive: boolean, stacked: boolean) {
@@ -42,6 +44,9 @@ function NavBar() {
       )}
       <NavLink to="/query" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Query
+      </NavLink>
+      <NavLink to="/scenario" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+        Scenario
       </NavLink>
       <NavLink to="/help" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Help
@@ -117,7 +122,15 @@ function App() {
                 path="/query"
                 element={
                   <RequireAuth>
-                    <Query />
+                    <QueryWorkspace />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/scenario"
+                element={
+                  <RequireAuth>
+                    <ScenarioWorkbench />
                   </RequireAuth>
                 }
               />
@@ -145,6 +158,9 @@ function App() {
                   </RequireAuth>
                 }
               />
+              {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
+                  Read-only, no composer, and it carries no identity. */}
+              <Route path="/shared/:token" element={<SharedConversation />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

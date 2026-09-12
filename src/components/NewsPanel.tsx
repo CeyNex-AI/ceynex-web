@@ -21,8 +21,8 @@ import timeAgo from "../lib/timeAgo";
 const RELEVANCE_STYLES: Record<Relevance, string> = {
   strong: "text-emerald-700 bg-emerald-50",
   related: "text-gray-500 bg-gray-100",
-  loose: "text-gray-400 bg-gray-50",
-  unscored: "text-gray-400 bg-gray-50",
+  loose: "text-gray-500 bg-gray-50",
+  unscored: "text-gray-500 bg-gray-50",
 };
 
 const RELEVANCE_LABELS: Record<Relevance, string> = {
@@ -62,7 +62,7 @@ export default function NewsPanel({
           </span>
         )}
       </div>
-      <p className="text-xs text-gray-400 mb-3">
+      <p className="text-xs text-gray-500 mb-3">
         Recent coverage from GDELT. Not used to produce the answer above.
       </p>
 
@@ -98,7 +98,7 @@ function ArticleCard({ article }: { article: NewsArticle }) {
           // "seen", never "published": GDELT reports when it first crawled the
           // article, and relabelling a crawl timestamp as a publication date
           // would be the one unsourced claim on the page.
-          <span className="text-xs text-gray-400 shrink-0" title="When GDELT first saw this article">
+          <span className="text-xs text-gray-500 shrink-0" title="When GDELT first saw this article">
             seen {timeAgo(article.seen_at)}
           </span>
         )}

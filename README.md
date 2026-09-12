@@ -1,3 +1,26 @@
+# ceynex-web
+
+The CeyNex frontend (React 19, Vite, Tailwind). The backend is `ceynex-core`.
+
+```bash
+npm install
+npm run dev              # http://127.0.0.1:5173, proxying /api to the backend
+npm run build            # tsc -b && vite build
+npm run lint             # eslint
+npm test                 # vitest — the pure modules (SSE parser, resume loop, folds)
+npm run e2e              # Playwright + axe against a running app (see e2e/README.md)
+```
+
+The dev server proxies `/api` and `/health` to `http://127.0.0.1:8000` by default.
+Set `VITE_API_TARGET` (in the environment or `.env.local`) when the backend runs
+elsewhere — the evaluation runs use port 8079, since 8000 is not always free:
+
+```bash
+VITE_API_TARGET=http://127.0.0.1:8079 npm run dev
+```
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

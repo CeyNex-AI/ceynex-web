@@ -14,6 +14,8 @@ import {
 import PasswordStrength from "../components/PasswordStrength";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
+import InstructionsEditor from "../components/InstructionsEditor";
+import UsagePanel from "../components/UsagePanel";
 import usePageTitle from "../lib/usePageTitle";
 
 const PREFERENCE_LABELS: Record<keyof NotificationPreferences, string> = {
@@ -203,7 +205,7 @@ export default function Account() {
       <div className="max-w-md mx-auto space-y-6">
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Account</h1>
-          <p className="text-sm text-gray-500">Your CeyNex session, preferences, and API keys.</p>
+          <p className="text-sm text-gray-500">Your CeyNex session, sign-in details, preferences, how answers are written, usage and limits, and API keys.</p>
         </div>
 
         <div className="cx-panel-flat p-6 space-y-4">
@@ -226,7 +228,7 @@ export default function Account() {
 
         <div className="cx-panel-flat p-6 space-y-4">
           <h2 className="cx-panel-title">Password</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             You'll stay signed in on this device after changing it.
           </p>
           <form onSubmit={handleChangePassword} className="space-y-3">
@@ -280,7 +282,7 @@ export default function Account() {
 
         <div className="cx-panel-flat p-6 space-y-4">
           <h2 className="cx-panel-title">Email</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Your history and API keys move with it. Other devices are signed out; this one stays in.
           </p>
           <form onSubmit={handleChangeEmail} className="space-y-3">
@@ -322,7 +324,7 @@ export default function Account() {
 
         <div className="cx-panel-flat p-6 space-y-4">
           <h2 className="cx-panel-title">Notification preferences</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             What you'd be notified about, once a delivery channel exists for it. These are saved
             now; nothing is sent yet.
           </p>
@@ -337,7 +339,7 @@ export default function Account() {
                     onChange={(e) =>
                       setPrefs((current) => (current ? { ...current, [key]: e.target.checked } : current))
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    className="h-4 w-4 rounded border-gray-300 text-teal-700 focus:ring-teal-500"
                   />
                   {PREFERENCE_LABELS[key]}
                 </label>
@@ -357,9 +359,16 @@ export default function Account() {
           )}
         </div>
 
+        <InstructionsEditor />
+
+        <div className="space-y-4">
+          <h2 className="cx-panel-title">Usage and limits</h2>
+          <UsagePanel />
+        </div>
+
         <div className="cx-panel-flat p-6 space-y-4">
           <h2 className="cx-panel-title">API keys</h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             For programmatic access to the query API. A key authenticates the same way your login
             session does, at your account's current role.
           </p>
@@ -406,7 +415,7 @@ export default function Account() {
                 >
                   <div className="min-w-0">
                     <div className="text-gray-800 truncate">{k.label}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-500">
                       <code>{k.key_prefix}...</code>
                       {k.revoked ? " · revoked" : k.last_used_at ? ` · last used ${new Date(k.last_used_at).toLocaleDateString()}` : " · never used"}
                     </div>
