@@ -113,7 +113,7 @@ export default function Signup() {
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
               className="cx-input w-full px-3 py-2 text-sm"
-              placeholder="••••••••"
+              placeholder="Re-enter your password"
             />
           </div>
 

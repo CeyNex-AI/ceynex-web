@@ -1,9 +1,8 @@
 # ceynex-web CI: lint, the vitest suite, and the production build.
 #
-# The vitest suite (src/**/*.test.ts) needs nothing but Node. The Playwright
-# suite in e2e/ is deliberately not here: it drives the production bundle
-# against a running ceynex-core API over a loaded stack (see e2e/README.md),
-# which a runner does not have.
+# The Playwright suite in e2e/ is deliberately not here: it drives the
+# production bundle against a running ceynex-core API over a loaded stack (see
+# e2e/README.md), which a runner does not have.
 
 name: ci
 
@@ -40,7 +39,7 @@ jobs:
 
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,8 +49,6 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      # `vitest run`: the SSE parser fuzz, the resume loop, the transcript fold
-      # and version grouping. No network, no backend.
       - run: npm test
 
   build:

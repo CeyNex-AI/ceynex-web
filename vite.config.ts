@@ -20,8 +20,5 @@ export default defineConfig(({ mode }) => {
     // is what the Playwright suite drives: the dev server's on-demand
     // dependency optimisation reloads the page under the first tests.
     preview: { proxy },
-    // Vitest owns `src/**/*.test.ts`; the Playwright specs under e2e/ match its
-    // default pattern too and would fail on import.
-    test: { include: ['src/**/*.test.ts'] },
   }
 })
