@@ -48,7 +48,13 @@ body {
   --color-gray-200: #d2e6df;
   --color-gray-300: #b4d1c8;
   --color-gray-400: #86a89f;
-  --color-gray-500: #5f8178;
+  /* #5f8178 read at 3.93:1 against --color-gray-50 (#eff7f5) -- axe caught it
+   * on the Admin page's muted subtitles/nav labels, but every `text-gray-500`
+   * in the app resolves through this one token, so the fix belongs here, not
+   * at each call site. The tightest real case is NewsPanel's text-gray-500 on
+   * bg-gray-100 (#e1f0eb, darker than the page background); #526f67 clears
+   * WCAG AA's 4.5:1 against it (4.67:1) and against gray-50/white (5.04/5.49). */
+  --color-gray-500: #526f67;
   --color-gray-600: #46645c;
   --color-gray-700: #324b44;
   --color-gray-800: #1e322d;
