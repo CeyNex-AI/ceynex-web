@@ -5,11 +5,20 @@
  */
 
 import { expect, test } from "@playwright/test";
-import { ADMIN, answered, ask, expectNoSeriousA11yViolations, login } from "./helpers";
+import {
+  ADMIN,
+  answered,
+  ask,
+  expectNoSeriousA11yViolations,
+  login,
+  loginThroughTheForm,
+} from "./helpers";
 
 test("login page", async ({ page }) => {
   await page.goto("/");
   await expectNoSeriousA11yViolations(page, "login");
+  // The one spec that signs in through the form; the rest start signed in.
+  await loginThroughTheForm(page);
 });
 
 test("chat: empty, streaming, answered, and a follow-up", async ({ page }) => {

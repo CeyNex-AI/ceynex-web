@@ -28,7 +28,11 @@ runs before any spec. It creates `policymaker@ceynex.dev` through the ordinary
 signup route, and a 409 just means an earlier run made it. It also checks that
 `admin@ceynex.dev` can sign in. That account can only come from
 `CEYNEX_BOOTSTRAP_ADMIN` in step 2, because a signup never grants `admin`. If the
-admin seed is missing, the run stops there with the fix in the message.
+admin seed is missing, the run stops there with the fix in the message. It then
+signs each account in once and hands the tokens to the specs. The specs start
+signed in, the way a reloaded tab does. Only the login-page spec uses the form.
+Signing in through the form in every spec made about 50 sign-ins a run from one
+address, and the API's login limit of 10 a minute refused the 11th.
 
 `VITE_API_TARGET` moves the backend, `E2E_BASE_URL` points at a server you
 already have running (the suite drives the production bundle, not the dev

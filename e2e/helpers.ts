@@ -9,7 +9,34 @@ import AxeBuilder from "@axe-core/playwright";
 export const DEMO = { email: "policymaker@ceynex.dev", password: "ceynex-demo" };
 export const ADMIN = { email: "admin@ceynex.dev", password: "ceynex-demo" };
 
+/** Where `src/lib/tokenStorage.ts` keeps the session. */
+const TOKEN_KEY = "ceynex_token";
+
+function tokenFor(who: { email: string }): string {
+  const token = who.email === ADMIN.email ? process.env.E2E_TOKEN_ADMIN : process.env.E2E_TOKEN_DEMO;
+  if (!token) throw new Error(`No token for ${who.email}: e2e/global-setup.ts did not run.`);
+  return token;
+}
+
+/**
+ * Start signed in the way a reloaded tab does. A real token from the API
+ * (e2e/global-setup.ts signs each account in once) goes where
+ * `tokenStorage.ts` keeps it, and the app checks it against `/api/auth/me`
+ * exactly as it checks any stored session. The form itself is exercised by
+ * `loginThroughTheForm`, in a11y.spec.ts's login-page test.
+ */
 export async function login(page: Page, who = DEMO): Promise<void> {
+  await page.goto("/");
+  await page.evaluate(([key, value]) => localStorage.setItem(key, value), [TOKEN_KEY, tokenFor(who)]);
+  await page.goto("/query");
+  // The nav shows its links only to a signed-in reader, so this fails fast if
+  // the token was refused rather than when a spec later misses the composer.
+  await expect(page.getByRole("link", { name: "Account" })).toBeVisible();
+  await expect(page).toHaveURL(/\/query$/);
+}
+
+/** Sign in through the login form, as a reader does. */
+export async function loginThroughTheForm(page: Page, who = DEMO): Promise<void> {
   await page.goto("/");
   await page.getByLabel("Email").fill(who.email);
   await page.getByLabel("Password").fill(who.password);
