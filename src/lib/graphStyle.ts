@@ -95,17 +95,34 @@ export function relationshipLabel(type: string): string {
 
 export function toElements(nodes: GraphNode[], edges: GraphEdge[]): ElementDefinition[] {
   return [
-    ...nodes.map((node) => ({
-      group: "nodes" as const,
-      data: {
-        id: node.id,
-        name: node.name,
-        kind: node.label,
-        focus: node.focus,
-        ring: node.focus ? 0 : (RING[node.label] ?? 2),
-        properties: node.properties,
-      },
-    })),
+    ...nodes.map((node) => {
+      // A shock simulation's own result, carried on the item it simulated
+      // (backend `query_runner.py::_annotate_focus`) -- the one place a
+      // simulation answer's figures otherwise lived only in the evidence
+      // panel, never on the drawing next to it. `simPct` (not just the label
+      // text) is a real numeric data field so the stylesheet below can select
+      // on it directly, the same way `ring`/`kind` already drive styling.
+      const simPct = node.properties?.simulated_revenue_change_pct;
+      const simUsd = node.properties?.simulated_revenue_change_usd;
+      const hasSimulation = typeof simPct === "number" && typeof simUsd === "number";
+      return {
+        group: "nodes" as const,
+        data: {
+          id: node.id,
+          name: node.name,
+          kind: node.label,
+          focus: node.focus,
+          ring: node.focus ? 0 : (RING[node.label] ?? 2),
+          properties: node.properties,
+          ...(hasSimulation
+            ? {
+                simPct,
+                simLabel: `${node.name}\n${simPct > 0 ? "+" : ""}${simPct}%`,
+              }
+            : {}),
+        },
+      };
+    }),
     ...edges.map((edge) => ({
       group: "edges" as const,
       data: {
@@ -177,6 +194,28 @@ export function buildStylesheet(theme: Theme): StylesheetJson {
         "border-width": 3,
         "border-color": "#0f766e", // teal-700
       },
+    },
+    {
+      // A simulated node carries its own result instead of just its name --
+      // `simPct`/`simLabel` only exist on a node `_annotate_focus` matched, so
+      // this and the two colour rules below are inert on every other graph.
+      selector: "node[?focus][simPct]",
+      style: {
+        label: "data(simLabel)",
+        "text-wrap": "wrap",
+        "text-max-width": "72px",
+        "line-height": 1.3,
+      },
+    },
+    {
+      // A fall reads as a real loss, not a neutral fact -- red, the same
+      // meaning ConfidenceBadge and the status palette already give it.
+      selector: "node[?focus][simPct < 0]",
+      style: { "background-color": "#dc2626", "border-color": "#b91c1c" },
+    },
+    {
+      selector: "node[?focus][simPct >= 0]",
+      style: { "background-color": "#16a34a", "border-color": "#15803d" },
     },
     {
       selector: "edge",

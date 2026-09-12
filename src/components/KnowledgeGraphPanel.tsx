@@ -53,6 +53,14 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
     edges: graph.edges.length,
   });
 
+  const focusNode = graph.nodes.find((node) => node.id === graph.focus_id);
+  const simPct = focusNode?.properties.simulated_revenue_change_pct;
+  const simUsd = focusNode?.properties.simulated_revenue_change_usd;
+  const simulation =
+    focusNode && typeof simPct === "number" && typeof simUsd === "number"
+      ? { name: focusNode.name, pct: simPct, usd: simUsd }
+      : null;
+
   const handleExpand = useCallback(async (node: NodeSingular) => {
     const id = node.id();
     const cy = cyRef.current;
@@ -164,6 +172,18 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
         Click a node to trace its connections and pull in its neighbours. Drag to pan,
         scroll to zoom.
       </p>
+
+      {/* The simulated node's own result, in real text -- the canvas below is
+          aria-hidden (cytoscape renders to a <canvas>), so the on-node label
+          `graphStyle.ts` draws is invisible to a screen reader; this is the
+          same fact, read from the same node the drawing coloured. */}
+      {simulation && (
+        <p className="text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded-md px-3 py-2 mb-2">
+          Simulated: {simulation.name}'s revenue moves {simulation.pct > 0 ? "+" : ""}
+          {simulation.pct}% (USD {simulation.usd >= 0 ? "+" : ""}
+          {simulation.usd.toLocaleString()}) under this scenario.
+        </p>
+      )}
 
       {/* Same treatment ForecastChart gives its Recharts SVG, for a stronger
           reason: cytoscape renders to a <canvas>, which a screen reader cannot
