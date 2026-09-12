@@ -1,8 +1,9 @@
-# ceynex-web CI: lint and the production build.
+# ceynex-web CI: lint, the vitest suite, and the production build.
 #
-# No test suite exists yet (no vitest/jest, no *.test.* files) -- lint and a
-# real `vite build` are what's actually available to check on every PR, so
-# that's what runs. Add a `test` job here once a test framework lands.
+# The vitest suite (src/**/*.test.ts) needs nothing but Node. The Playwright
+# suite in e2e/ is deliberately not here: it drives the production bundle
+# against a running ceynex-core API over a loaded stack (see e2e/README.md),
+# which a runner does not have.
 
 name: ci
 
@@ -36,6 +37,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # `vitest run`: the SSE parser fuzz, the resume loop, the transcript fold
+      # and version grouping. No network, no backend.
+      - run: npm test
 
   build:
     runs-on: ubuntu-24.04
