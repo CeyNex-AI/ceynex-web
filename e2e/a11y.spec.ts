@@ -57,7 +57,7 @@ test("chat: the clarification card", async ({ page }) => {
 test("account, usage and instructions", async ({ page }) => {
   await login(page);
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Account", exact: true })).toBeVisible();
   await page.waitForLoadState("networkidle");
   await expectNoSeriousA11yViolations(page, "account");
 });
@@ -65,7 +65,7 @@ test("account, usage and instructions", async ({ page }) => {
 test("admin", async ({ page }) => {
   await login(page, ADMIN);
   await page.goto("/admin");
-  await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Admin", exact: true })).toBeVisible();
   await page.waitForLoadState("networkidle");
   await expectNoSeriousA11yViolations(page, "admin");
 });
