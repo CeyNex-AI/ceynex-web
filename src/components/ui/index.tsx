@@ -106,3 +106,74 @@ export function ErrorBanner({ children }: { children: ReactNode }) {
 export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-gray-100 rounded ${className}`} aria-hidden="true" />;
 }
+
+/**
+ * A row of buttons that switches which section of a long page is shown --
+ * Admin's first use (Users/System/Models/…), Account's second. A toggle-group
+ * (`aria-pressed`), the same pattern `QueryWorkspace`'s Chat/Single-question
+ * switch already uses, rather than a full ARIA tabs widget this codebase has
+ * no keyboard-arrow handling for yet.
+ */
+export function SectionNav<T extends string>({
+  section,
+  onChange,
+  items,
+  ariaLabel,
+}: {
+  section: T;
+  onChange: (s: T) => void;
+  items: { id: T; label: string }[];
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className="flex flex-wrap items-center gap-1 text-sm border-b border-gray-200 pb-3"
+    >
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          aria-pressed={section === item.id}
+          className={`px-2.5 py-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2
+                      focus-visible:outline-teal-600 ${
+                        section === item.id
+                          ? "bg-teal-50 text-teal-700 font-medium"
+                          : "text-gray-500 hover:text-gray-900"
+                      }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One at-a-glance tile on an Overview tab: the basics, and a way to see more. */
+export function SummaryTile({
+  title,
+  onView,
+  children,
+}: {
+  title: string;
+  onView: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="cx-panel-flat p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onView}
+          className="text-xs font-medium text-teal-700 hover:text-teal-800 shrink-0"
+        >
+          View <span aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div className="text-sm text-gray-600 min-h-[1.25rem]">{children}</div>
+    </div>
+  );
+}

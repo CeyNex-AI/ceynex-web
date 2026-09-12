@@ -2,11 +2,11 @@ export type Role = "policymaker" | "admin" | "researcher" | "exporter";
 
 /**
  * The four roles, mirroring ceynex-core's `ceynex/api/users.py` `VALID_ROLES`.
- * Since RBAC landed there are no fixed demo accounts and no self-selected role
- * at signup -- a new account always lands on `researcher` (the backend's
- * `DEFAULT_ROLE`); only an admin moves it elsewhere, from the Admin page. The
- * signed-in role always comes from the server's response, never from here (see
- * auth.tsx).
+ * Since RBAC landed there are no fixed demo accounts. A new account picks its
+ * own role at signup from `SIGNUP_ROLES` below (`researcher` is the backend's
+ * default if none is sent); `admin` is not offered there and is only ever set
+ * by an existing admin, from the Admin page. The signed-in role always comes
+ * from the server's response, never from here (see auth.tsx).
  */
 export const ALL_ROLES: Role[] = ["researcher", "exporter", "policymaker", "admin"];
 

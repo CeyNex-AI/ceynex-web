@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   type AuditLogItem,
@@ -30,6 +30,7 @@ import { useTheme } from "../lib/useTheme";
 import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
 import UsagePanel from "../components/UsagePanel";
+import { SectionNav, SummaryTile } from "../components/ui";
 import usePageTitle from "../lib/usePageTitle";
 
 interface HealthResponse {
@@ -763,59 +764,7 @@ const SECTIONS = [
 
 type Section = "overview" | (typeof SECTIONS)[number]["id"];
 
-/**
- * The nav for jumping between sections, and the section-picker inside each
- * overview tile's "View" button both drive the same `section` state --
- * a toggle-group of buttons (`aria-pressed`), the same pattern
- * `QueryWorkspace`'s Chat/Single-question switch already uses, rather than a
- * full ARIA tabs widget this codebase has no keyboard-arrow handling for yet.
- */
-function SectionNav({ section, onChange }: { section: Section; onChange: (s: Section) => void }) {
-  const items: { id: Section; label: string }[] = [{ id: "overview", label: "Overview" }, ...SECTIONS];
-  return (
-    <div
-      role="group"
-      aria-label="Admin sections"
-      className="flex flex-wrap items-center gap-1 text-sm border-b border-gray-200 pb-3"
-    >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onChange(item.id)}
-          aria-pressed={section === item.id}
-          className={`px-2.5 py-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2
-                      focus-visible:outline-teal-600 ${
-                        section === item.id
-                          ? "bg-teal-50 text-teal-700 font-medium"
-                          : "text-gray-500 hover:text-gray-900"
-                      }`}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** One at-a-glance tile on the Overview tab: the basics, and a way to see more. */
-function SummaryTile({ title, onView, children }: { title: string; onView: () => void; children: ReactNode }) {
-  return (
-    <div className="cx-panel-flat p-4 flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <button
-          type="button"
-          onClick={onView}
-          className="text-xs font-medium text-teal-700 hover:text-teal-800 shrink-0"
-        >
-          View <span aria-hidden="true">→</span>
-        </button>
-      </div>
-      <div className="text-sm text-gray-600 min-h-[1.25rem]">{children}</div>
-    </div>
-  );
-}
+const NAV_ITEMS: { id: Section; label: string }[] = [{ id: "overview", label: "Overview" }, ...SECTIONS];
 
 function UsersSummary({ onView }: { onView: () => void }) {
   const [users, setUsers] = useState<UserAdminItem[] | null>(null);
@@ -1024,7 +973,7 @@ export default function Admin() {
           </p>
         </div>
 
-        <SectionNav section={section} onChange={setSection} />
+        <SectionNav section={section} onChange={setSection} items={NAV_ITEMS} ariaLabel="Admin sections" />
 
         {section === "overview" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
