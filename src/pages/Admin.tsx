@@ -709,7 +709,7 @@ function AuditLogCard() {
   const shown = entries && (expanded ? entries : entries.slice(0, 8));
 
   return (
-    <Card title="Admin activity" subtitle="Every privileged action, newest first (SRS 3.4.7).">
+    <Card title="Admin activity" subtitle="Every privileged action, newest first.">
       {error && (
         <p role="alert" className="text-sm text-red-700 mb-2">
           {error}
@@ -1020,7 +1020,7 @@ export default function Admin() {
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
           <p className="text-sm text-gray-500">
-            Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
+            Retrain, ingest and data-quality review: real actions against the live system.
           </p>
         </div>
 
