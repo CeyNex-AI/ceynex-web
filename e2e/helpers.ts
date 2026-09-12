@@ -1,7 +1,11 @@
 import { expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-/** The fixed demo account and password from ceynex-core's `api/auth.py`. */
+/**
+ * The accounts the specs sign in as. RBAC has no fixed demo accounts, so
+ * e2e/global-setup.ts creates the policymaker through signup, and the admin comes
+ * from the API's own `CEYNEX_BOOTSTRAP_ADMIN` seed (see e2e/README.md).
+ */
 export const DEMO = { email: "policymaker@ceynex.dev", password: "ceynex-demo" };
 export const ADMIN = { email: "admin@ceynex.dev", password: "ceynex-demo" };
 

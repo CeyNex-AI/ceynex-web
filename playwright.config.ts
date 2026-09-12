@@ -14,6 +14,9 @@ const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
 
 export default defineConfig({
   testDir: "./e2e",
+  // Creates the policymaker the specs sign in as and checks the seeded admin
+  // exists, since RBAC has no fixed demo accounts (e2e/global-setup.ts).
+  globalSetup: "./e2e/global-setup.ts",
   timeout: 120_000,
   expect: { timeout: 20_000 },
   // One worker: the specs share one backend and one demo account, and a turn

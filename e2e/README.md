@@ -11,15 +11,24 @@ evidence and says it has no model-written prose).
 # 1. the data stack, from ceynex-core
 make up
 
-# 2. the API, degraded, on 8079 (8000 is not always free on a dev machine)
+# 2. the API, degraded, on 8079 (8000 is not always free on a dev machine),
+#    seeding the admin the specs sign in as
 cd ../ceynex-core
-OPENAI_API_KEY= OPENROUTER_API_KEY= .venv/bin/uvicorn ceynex.api.main:app --port 8079
+OPENAI_API_KEY= OPENROUTER_API_KEY= CEYNEX_BOOTSTRAP_ADMIN=admin@ceynex.dev:ceynex-demo \
+  .venv/bin/uvicorn ceynex.api.main:app --port 8079
 
 # 3. the checks — the bundle is built and served for you (vite preview on
 #    4173), proxying to 8079
 cd ../ceynex-web
 npm run e2e
 ```
+
+**Accounts.** ceynex-core's RBAC has no fixed demo accounts. `e2e/global-setup.ts`
+runs before any spec. It creates `policymaker@ceynex.dev` through the ordinary
+signup route, and a 409 just means an earlier run made it. It also checks that
+`admin@ceynex.dev` can sign in. That account can only come from
+`CEYNEX_BOOTSTRAP_ADMIN` in step 2, because a signup never grants `admin`. If the
+admin seed is missing, the run stops there with the fix in the message.
 
 `VITE_API_TARGET` moves the backend, `E2E_BASE_URL` points at a server you
 already have running (the suite drives the production bundle, not the dev
