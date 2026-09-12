@@ -258,7 +258,7 @@ export default function Account() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
-      <div className="max-w-md mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Account</h1>
           <p className="text-sm text-gray-500">Your CeyNex session, sign-in details, preferences, how answers are written, usage and limits, and API keys.</p>
@@ -295,7 +295,7 @@ export default function Account() {
         )}
 
         {section === "session" && (
-          <div className="cx-panel-flat p-6 space-y-4">
+          <div className="max-w-md cx-panel-flat p-6 space-y-4">
             <div>
               <div className="text-xs font-medium text-gray-500 mb-1">Signed in as</div>
               <div className="text-sm text-gray-800">{userId ?? "Not signed in"}</div>
@@ -315,7 +315,7 @@ export default function Account() {
         )}
 
         {section === "password" && (
-          <div className="cx-panel-flat p-6 space-y-4">
+          <div className="max-w-md cx-panel-flat p-6 space-y-4">
             <h2 className="cx-panel-title">Password</h2>
             <p className="text-xs text-gray-500">
               You'll stay signed in on this device after changing it.
@@ -371,7 +371,7 @@ export default function Account() {
         )}
 
         {section === "email" && (
-          <div className="cx-panel-flat p-6 space-y-4">
+          <div className="max-w-md cx-panel-flat p-6 space-y-4">
             <h2 className="cx-panel-title">Email</h2>
             <p className="text-xs text-gray-500">
               Your history and API keys move with it. Other devices are signed out; this one stays in.
@@ -415,7 +415,7 @@ export default function Account() {
         )}
 
         {section === "notifications" && (
-          <div className="cx-panel-flat p-6 space-y-4">
+          <div className="max-w-md cx-panel-flat p-6 space-y-4">
             <h2 className="cx-panel-title">Notification preferences</h2>
             <p className="text-xs text-gray-500">
               What you'd be notified about, once a delivery channel exists for it. These are saved
@@ -453,7 +453,11 @@ export default function Account() {
           </div>
         )}
 
-        {section === "instructions" && <InstructionsEditor />}
+        {section === "instructions" && (
+          <div className="max-w-md">
+            <InstructionsEditor />
+          </div>
+        )}
 
         {section === "usage" && (
           <div className="space-y-4">
@@ -561,7 +565,7 @@ export default function Account() {
         )}
 
         {section === "delete" && (
-          <div className="cx-panel-flat p-6 space-y-3 border border-red-200">
+          <div className="max-w-md cx-panel-flat p-6 space-y-3 border border-red-200">
             <h2 className="cx-panel-title text-red-700">Delete account</h2>
             <p className="text-xs text-gray-500">
               Permanent. Removes your account, saved queries, history, and API keys. There's no undo.
