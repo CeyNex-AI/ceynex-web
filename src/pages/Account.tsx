@@ -62,6 +62,34 @@ function InstructionsSummary({ onView }: { onView: () => void }) {
   );
 }
 
+/**
+ * The submit button for account deletion, once every other condition is
+ * already met. A short, non-skippable pause -- the failure mode this guards
+ * isn't "didn't mean to delete the account", it's "clicked through the form
+ * on autopilot". Its own component so the countdown is real component state
+ * ticking down via a timer callback (the pattern this codebase's lint
+ * requires), not a value reset from inside an effect body: the parent simply
+ * mounts this fresh each time the form becomes ready, and unmounts it
+ * otherwise, which is what restarts the count at 3.
+ */
+function DeleteSubmitButton({ deleting }: { deleting: boolean }) {
+  const [countdown, setCountdown] = useState(3);
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+  return (
+    <button
+      type="submit"
+      disabled={deleting || countdown > 0}
+      className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-md px-4 py-2"
+    >
+      {deleting ? "Deleting..." : countdown > 0 ? `Wait ${countdown}s…` : "Permanently delete"}
+    </button>
+  );
+}
+
 function UsageSummaryTile({ onView }: { onView: () => void }) {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   useEffect(() => {
@@ -115,8 +143,17 @@ export default function Account() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deletePw, setDeletePw] = useState("");
+  const [deleteAcknowledged, setDeleteAcknowledged] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Typing the account's own email, not a fixed word: a generic "type DELETE"
+  // is muscle memory after the first time, and doesn't require the reader to
+  // have actually looked at which account they're about to remove.
+  const deleteEmailMatches =
+    deleteConfirm.trim().length > 0 &&
+    deleteConfirm.trim().toLowerCase() === (userId ?? "").toLowerCase();
+  const deleteReady = deleteEmailMatches && deleteAcknowledged && deletePw.length > 0;
 
   useEffect(() => {
     fetchPreferences()
@@ -242,8 +279,12 @@ export default function Account() {
   async function handleDeleteAccount(e: FormEvent) {
     e.preventDefault();
     setDeleteError(null);
-    if (deleteConfirm !== "DELETE") {
-      setDeleteError('Type DELETE to confirm.');
+    if (!deleteEmailMatches) {
+      setDeleteError("Type your account email exactly to confirm.");
+      return;
+    }
+    if (!deleteAcknowledged) {
+      setDeleteError("Check the box confirming you understand this is permanent.");
       return;
     }
     setDeleting(true);
@@ -582,15 +623,28 @@ export default function Account() {
                   </button>
                 ) : (
                   <form onSubmit={handleDeleteAccount} className="space-y-3">
-                    <input
-                      type="text"
-                      value={deleteConfirm}
-                      onChange={(e) => setDeleteConfirm(e.target.value)}
-                      autoComplete="off"
-                      placeholder="Type DELETE to confirm"
-                      aria-label="Type DELETE to confirm account deletion"
-                      className="cx-input w-full text-sm px-3 py-2"
-                    />
+                    <ul className="text-xs text-red-800 bg-red-50 border border-red-200 rounded-md px-3 py-2.5 list-disc list-inside space-y-0.5">
+                      <li>Every saved query and chat is deleted, not archived.</li>
+                      <li>Every API key you've created stops working immediately.</li>
+                      <li>Nobody, including an admin, can undo this afterward.</li>
+                    </ul>
+
+                    <div>
+                      <label htmlFor="delete-confirm-email" className="block text-xs text-gray-600 mb-1">
+                        Type your account email ({userId}) to confirm
+                      </label>
+                      <input
+                        id="delete-confirm-email"
+                        type="text"
+                        value={deleteConfirm}
+                        onChange={(e) => setDeleteConfirm(e.target.value)}
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        placeholder={userId ?? ""}
+                        className="cx-input w-full text-sm px-3 py-2"
+                      />
+                    </div>
                     <input
                       type="password"
                       value={deletePw}
@@ -600,25 +654,39 @@ export default function Account() {
                       aria-label="Current password to confirm account deletion"
                       className="cx-input w-full text-sm px-3 py-2"
                     />
+                    <label className="flex items-start gap-2 text-xs text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={deleteAcknowledged}
+                        onChange={(e) => setDeleteAcknowledged(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      I understand this is permanent and can't be undone.
+                    </label>
                     {deleteError && (
                       <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
                         {deleteError}
                       </p>
                     )}
                     <div className="flex items-center gap-3">
-                      <button
-                        type="submit"
-                        disabled={deleting || deleteConfirm !== "DELETE" || !deletePw}
-                        className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-md px-4 py-2"
-                      >
-                        {deleting ? "Deleting..." : "Permanently delete"}
-                      </button>
+                      {deleteReady ? (
+                        <DeleteSubmitButton deleting={deleting} />
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled
+                          className="text-sm font-medium text-white bg-red-300 rounded-md px-4 py-2 cursor-not-allowed"
+                        >
+                          Permanently delete
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
                           setShowDelete(false);
                           setDeleteConfirm("");
                           setDeletePw("");
+                          setDeleteAcknowledged(false);
                           setDeleteError(null);
                         }}
                         className="text-sm text-gray-500 hover:text-gray-700"
