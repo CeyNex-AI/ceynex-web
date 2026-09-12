@@ -86,7 +86,7 @@ function TopicChip({
       type="button"
       onClick={() => onPick(topic.prompt)}
       title={`${topic.articles_24h} articles in the last 24h, against a baseline of ${topic.baseline_24h.toFixed(0)}`}
-      className="group inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-teal-700 bg-white border border-gray-200 hover:border-teal-300 rounded-full pl-3 pr-2 py-1 transition-colors"
+      className="cx-chip group text-xs pl-3 pr-2 py-1"
     >
       <span>{topic.label}</span>
       {/* No badge on a falling topic. It is still worth clicking, and the number

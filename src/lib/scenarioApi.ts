@@ -6,7 +6,7 @@
  * authenticated, and has its own rate-limit allowance sized for a slider.
  */
 
-import { apiFetch } from "./apiFetch";
+import { apiJson } from "./apiFetch";
 import type { Evidence } from "../types/contracts";
 
 export type Shock = "fx" | "tariff" | "agreement";
@@ -65,5 +65,5 @@ export interface ScenarioResponse {
 }
 
 export function runScenario(body: ScenarioRequest, signal?: AbortSignal): Promise<ScenarioResponse> {
-  return apiFetch<ScenarioResponse>("/api/scenario/run", { method: "POST", body, auth: true, signal });
+  return apiJson<ScenarioResponse>("/api/scenario/run", { method: "POST", body, auth: true, signal });
 }

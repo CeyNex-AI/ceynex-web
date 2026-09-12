@@ -3,6 +3,7 @@ import type { Core, ElementDefinition, LayoutOptions, StylesheetJson } from "cyt
 
 /** `NodeShape` is not re-exported at the package root, only under `Css`. */
 type NodeShape = cytoscape.Css.NodeShape;
+import type { Theme } from "./siteApi";
 import type { GraphEdge, GraphNode } from "../types/contracts";
 
 /**
@@ -55,16 +56,26 @@ const NODE_SHAPE: Record<string, NodeShape> = {
  * so it means "the subject of this question" rather than "a commodity" —
  * expanding a country pulls in other commodities, and colouring those teal too
  * would leave the accent meaning nothing. The label is carried by shape.
+ *
+ * Cytoscape draws to a <canvas>, not the DOM, so it can't pick up the
+ * [data-theme="signal-deck"] CSS custom properties the rest of the app reacts
+ * to automatically -- these two shades are hardcoded per theme here instead
+ * (classic: Tailwind's stock gray-200/100; Signal Deck: index.css's
+ * teal-tinted gray-200/100).
  */
-const NODE_FILL: Record<string, string> = {
-  Commodity: "#e5e7eb", // gray-200
-  ApparelCategory: "#e5e7eb",
-  Country: "#e5e7eb",
-  District: "#f3f4f6", // gray-100
-  HSCode: "#e5e7eb",
-  TradeAgreement: "#f3f4f6",
-  PolicyDocument: "#f3f4f6",
-};
+function nodeFill(theme: Theme): Record<string, string> {
+  const gray200 = theme === "signal-deck" ? "#d2e6df" : "#e5e7eb";
+  const gray100 = theme === "signal-deck" ? "#e1f0eb" : "#f3f4f6";
+  return {
+    Commodity: gray200,
+    ApparelCategory: gray200,
+    Country: gray200,
+    District: gray100,
+    HSCode: gray200,
+    TradeAgreement: gray100,
+    PolicyDocument: gray100,
+  };
+}
 
 /** Human wording for the four relationship types, for the legend and the
  * sr-only table. The raw SCREAMING_CASE is Neo4j's, not a reader's. */
@@ -111,83 +122,103 @@ export function toElements(nodes: GraphNode[], edges: GraphEdge[]): ElementDefin
   ];
 }
 
-export const STYLESHEET: StylesheetJson = [
-  {
-    selector: "node",
-    style: {
-      label: "data(name)",
-      "font-size": 11,
-      "font-family": "ui-sans-serif, system-ui, sans-serif",
-      color: "#374151", // gray-700
-      "text-valign": "bottom",
-      "text-margin-y": 5,
-      "text-max-width": "90px",
-      "text-wrap": "ellipsis",
-      width: 34,
-      height: 34,
-      shape: (node: { data: (k: string) => string }) => NODE_SHAPE[node.data("kind")] ?? "ellipse",
-      "background-color": (node: { data: (k: string) => string }) =>
-        NODE_FILL[node.data("kind")] ?? "#e5e7eb",
-      "border-width": 1,
-      "border-color": "#d1d5db", // gray-300
+/** Cytoscape's own stylesheet, rebuilt per theme (see `nodeFill`'s docstring
+ * for why this can't just react to CSS custom properties like the rest of
+ * the app). The teal accent (`node[?focus]`, `node:selected`,
+ * `node.expanded`) is unchanged across themes -- it's the real brand colour
+ * in both. */
+export function buildStylesheet(theme: Theme): StylesheetJson {
+  const fill = nodeFill(theme);
+  const gray700 = theme === "signal-deck" ? "#324b44" : "#374151";
+  const gray500 = theme === "signal-deck" ? "#5f8178" : "#6b7280";
+  const gray300 = theme === "signal-deck" ? "#b4d1c8" : "#d1d5db";
+  const lineColor = theme === "signal-deck" ? "#b4d1c8" : "#cbd5e1";
+  const sansFont =
+    theme === "signal-deck"
+      ? "'Manrope', ui-sans-serif, system-ui, sans-serif"
+      : "ui-sans-serif, system-ui, sans-serif";
+  const monoFont = theme === "signal-deck" ? "'IBM Plex Mono', ui-monospace, monospace" : "ui-monospace, monospace";
+
+  return [
+    {
+      selector: "node",
+      style: {
+        label: "data(name)",
+        "font-size": 11,
+        "font-family": sansFont,
+        "font-weight": theme === "signal-deck" ? 700 : 400,
+        color: gray700,
+        "text-valign": "bottom",
+        "text-margin-y": 5,
+        "text-max-width": "90px",
+        "text-wrap": "ellipsis",
+        width: 34,
+        height: 34,
+        shape: (node: { data: (k: string) => string }) => NODE_SHAPE[node.data("kind")] ?? "ellipse",
+        "background-color": (node: { data: (k: string) => string }) => fill[node.data("kind")] ?? fill.Commodity,
+        "border-width": 1,
+        "border-color": gray300,
+      },
     },
-  },
-  {
-    // The subject of the question: bigger, teal, and labelled in white on the
-    // node itself rather than beneath it.
-    selector: "node[?focus]",
-    style: {
-      width: 62,
-      height: 62,
-      "font-size": 12,
-      "font-weight": 600,
-      "background-color": "#0d9488", // teal-600 — spent on this node alone
-      color: "#ffffff",
-      "text-valign": "center",
-      "text-margin-y": 0,
-      "border-width": 3,
-      "border-color": "#0f766e", // teal-700
+    {
+      // The subject of the question: bigger, teal, and labelled in white on the
+      // node itself rather than beneath it.
+      selector: "node[?focus]",
+      style: {
+        width: 62,
+        height: 62,
+        "font-size": 12,
+        "font-weight": 700,
+        "font-family": sansFont,
+        "background-color": "#0d9488", // teal-600 — spent on this node alone
+        color: "#ffffff",
+        "text-valign": "center",
+        "text-margin-y": 0,
+        "border-width": 3,
+        "border-color": "#0f766e", // teal-700
+      },
     },
-  },
-  {
-    selector: "edge",
-    style: {
-      "curve-style": "bezier",
-      "target-arrow-shape": "triangle",
-      "arrow-scale": 0.8,
-      width: "mapData(weight, 0, 1, 1.5, 6)",
-      "line-color": "#cbd5e1",
-      "target-arrow-color": "#cbd5e1",
-      label: "data(label)",
-      "font-size": 9,
-      color: "#6b7280", // gray-500
-      "text-background-color": "#ffffff",
-      "text-background-opacity": 0.85,
-      "text-background-padding": "2px",
-      "text-rotation": "autorotate",
+    {
+      selector: "edge",
+      style: {
+        "curve-style": "bezier",
+        "target-arrow-shape": "triangle",
+        "arrow-scale": 0.8,
+        width: "mapData(weight, 0, 1, 1.5, 6)",
+        "line-color": lineColor,
+        "target-arrow-color": lineColor,
+        label: "data(label)",
+        "font-size": 9,
+        "font-family": monoFont,
+        color: gray500,
+        "text-background-color": "#ffffff",
+        "text-background-opacity": 0.85,
+        "text-background-padding": "2px",
+        "text-rotation": "autorotate",
+      },
     },
-  },
-  {
-    // Classification and coverage are structural, not measured — dashed, so the
-    // eye does not read a thin solid line as a small trade flow.
-    selector: 'edge[kind = "CLASSIFIED_AS"], edge[kind = "COVERED_BY"]',
-    style: { "line-style": "dashed", "target-arrow-shape": "none" },
-  },
-  {
-    selector: "node:selected",
-    style: { "border-width": 3, "border-color": "#0d9488" },
-  },
-  {
-    // Everything not adjacent to the selection, faded rather than hidden: the
-    // shape of the whole graph stays legible while one path is read.
-    selector: ".dimmed",
-    style: { opacity: 0.2, "text-opacity": 0.2 },
-  },
-  {
-    selector: "node.expanded",
-    style: { "border-color": "#0d9488", "border-style": "dotted", "border-width": 2 },
-  },
-];
+    {
+      // Classification and coverage are structural, not measured — dashed, so the
+      // eye does not read a thin solid line as a small trade flow.
+      selector: 'edge[kind = "CLASSIFIED_AS"], edge[kind = "COVERED_BY"]',
+      style: { "line-style": "dashed", "target-arrow-shape": "none" },
+    },
+    {
+      selector: "node:selected",
+      style: { "border-width": 3, "border-color": "#0d9488" },
+    },
+    {
+      // Everything not adjacent to the selection, faded rather than hidden: the
+      // shape of the whole graph stays legible while one path is read.
+      selector: ".dimmed",
+      style: { opacity: 0.2, "text-opacity": 0.2 },
+    },
+    {
+      selector: "node.expanded",
+      style: { "border-color": "#0d9488", "border-style": "dotted", "border-width": 2 },
+    },
+  ];
+}
 
 /**
  * Concentric, not cose. `cose` is force-directed and seeded randomly, so the

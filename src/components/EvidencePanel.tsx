@@ -25,8 +25,8 @@ export default function EvidencePanel({
   highlight?: number | null;
 }) {
   return (
-    <aside className="w-full lg:w-80 shrink-0 bg-white border border-gray-200 rounded-lg p-4">
-      <h2 className="text-sm font-semibold text-gray-900 mb-3">Evidence</h2>
+    <aside className="cx-panel w-full lg:w-80 shrink-0 p-4">
+      <h2 className="cx-panel-title mb-3">Evidence</h2>
       {evidence.length === 0 ? (
         <p className="text-sm text-gray-500">No supporting evidence for this answer.</p>
       ) : (
@@ -73,13 +73,17 @@ function EvidenceItem({
     >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span
-          className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded ${
+          className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
             web ? "text-amber-800 bg-amber-100" : "text-teal-700 bg-teal-50"
           }`}
         >
+          <span
+            aria-hidden="true"
+            className={`w-1.5 h-1.5 rounded-full ${web ? "bg-amber-700" : "bg-teal-700"}`}
+          />
           {item.source_id}
         </span>
-        {item.period && <span className="text-xs text-gray-500">{item.period}</span>}
+        {item.period && <span className="text-xs font-mono text-gray-500">{item.period}</span>}
       </div>
       {web && (
         <p className="text-xs text-amber-800 mb-1">

@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { AssistantTurn, UserTurn } from "../components/ChatMessage";
 import { ErrorBanner, Skeleton } from "../components/ui";
-import { apiFetch } from "../lib/apiFetch";
+import { apiJson } from "../lib/apiFetch";
 import usePageTitle from "../lib/usePageTitle";
 import type { ChatMessage } from "../types/chat";
 
@@ -34,7 +34,7 @@ export default function SharedConversation() {
   useEffect(() => {
     if (!token) return;
     let live = true;
-    apiFetch<Shared>(`/api/chat/shared/${token}`)
+    apiJson<Shared>(`/api/chat/shared/${token}`)
       .then((value) => live && setData(value))
       .catch(() =>
         live &&

@@ -4,15 +4,17 @@ import Logo from "./components/Logo";
 import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./lib/auth";
 import { ROLE_LABELS } from "./lib/roles";
+import { ThemeProvider } from "./lib/theme";
 import { useAuth } from "./lib/useAuth";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import QueryWorkspace from "./pages/QueryWorkspace";
 import ScenarioWorkbench from "./pages/ScenarioWorkbench";
 import SharedConversation from "./pages/SharedConversation";
-import QueryWorkspace from "./pages/QueryWorkspace";
+import Signup from "./pages/Signup";
 
 function navLinkClass(isActive: boolean, stacked: boolean) {
   const base = stacked ? "block px-3 py-2 rounded-md text-sm font-medium transition-colors" : navLinkClassInline;
@@ -31,9 +33,14 @@ function NavBar() {
   const links = (stacked: boolean) => (
     <>
       {!userId && (
-        <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
-          Login
-        </NavLink>
+        <>
+          <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+            Login
+          </NavLink>
+          <NavLink to="/signup" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
+            Sign up
+          </NavLink>
+        </>
       )}
       <NavLink to="/query" className={({ isActive }) => navLinkClass(isActive, stacked)} onClick={() => setMenuOpen(false)}>
         Query
@@ -56,11 +63,12 @@ function NavBar() {
   );
 
   return (
-    <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+    <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3 relative">
+      <div aria-hidden="true" className="cx-nav-hairline absolute top-0 left-0 right-0 h-[3px]" />
       <div className="flex items-center gap-1">
         <Link to={userId ? "/query" : "/"} className="flex items-center gap-2 mr-6">
           <Logo />
-          <span className="text-sm font-semibold text-gray-900 tracking-tight">CeyNex</span>
+          <span className="font-display text-sm font-bold text-gray-900 tracking-tight">CeyNex</span>
         </Link>
         <div className="hidden md:flex items-center gap-1">{links(false)}</div>
         {role && (
@@ -94,68 +102,71 @@ function NavBar() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        {/* Keyboard-only users can jump straight past the nav; visually
-         * hidden until focused, matching the standard skip-link pattern. */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
-        >
-          Skip to main content
-        </a>
-        <NavBar />
-        <main id="main-content">
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route
-              path="/query"
-              element={
-                <RequireAuth>
-                  <QueryWorkspace />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/scenario"
-              element={
-                <RequireAuth>
-                  <ScenarioWorkbench />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/help"
-              element={
-                <RequireAuth>
-                  <Help />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/account"
-              element={
-                <RequireAuth>
-                  <Account />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth>
-                  <Admin />
-                </RequireAuth>
-              }
-            />
-            {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
-              Read-only, no composer, and it carries no identity. */}
-          <Route path="/shared/:token" element={<SharedConversation />} />
-          <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          {/* Keyboard-only users can jump straight past the nav; visually
+           * hidden until focused, matching the standard skip-link pattern. */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
+          >
+            Skip to main content
+          </a>
+          <NavBar />
+          <main id="main-content">
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route
+                path="/query"
+                element={
+                  <RequireAuth>
+                    <QueryWorkspace />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/scenario"
+                element={
+                  <RequireAuth>
+                    <ScenarioWorkbench />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <RequireAuth>
+                    <Help />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/account"
+                element={
+                  <RequireAuth>
+                    <Account />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth>
+                    <Admin />
+                  </RequireAuth>
+                }
+              />
+              {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
+                  Read-only, no composer, and it carries no identity. */}
+              <Route path="/shared/:token" element={<SharedConversation />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

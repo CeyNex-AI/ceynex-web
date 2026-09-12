@@ -1,21 +1,18 @@
 export type Role = "policymaker" | "admin" | "researcher" | "exporter";
 
 /**
- * Fixed demo accounts, not a self-selected dropdown -- picking your own role
- * would make the Admin gate meaningless. Mirrors ceynex-core's
- * `ceynex/api/auth.py` exactly; the role shown here is only a label for the
- * login page's shortcut buttons, never the source of truth -- the signed-in
- * role always comes from the server's response (see auth.tsx).
+ * The four roles, mirroring ceynex-core's `ceynex/api/users.py` `VALID_ROLES`.
+ * Since RBAC landed there are no fixed demo accounts and no self-selected role
+ * at signup -- a new account always lands on `researcher` (the backend's
+ * `DEFAULT_ROLE`); only an admin moves it elsewhere, from the Admin page. The
+ * signed-in role always comes from the server's response, never from here (see
+ * auth.tsx).
  */
-export const DEMO_ACCOUNTS: Record<string, Role> = {
-  "policymaker@ceynex.dev": "policymaker",
-  "admin@ceynex.dev": "admin",
-  "researcher@ceynex.dev": "researcher",
-  "exporter@ceynex.dev": "exporter",
-};
+export const ALL_ROLES: Role[] = ["researcher", "exporter", "policymaker", "admin"];
 
-/** Shared by all four demo accounts server-side -- see ceynex/api/auth.py. */
-export const DEMO_PASSWORD = "ceynex-demo";
+/** Roles a new signup may pick — everything except `admin`, which is only ever
+ * created by an existing admin (mirrors ceynex-core's `users.SIGNUP_ROLES`). */
+export const SIGNUP_ROLES: Role[] = ["researcher", "exporter", "policymaker"];
 
 export const ROLE_LABELS: Record<Role, string> = {
   policymaker: "Policymaker",

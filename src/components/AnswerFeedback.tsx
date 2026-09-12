@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { apiFetch } from "../lib/apiFetch";
+import { apiJson } from "../lib/apiFetch";
 import { Button } from "./ui";
 
 export default function AnswerFeedback({ messageId }: { messageId: number }) {
@@ -24,7 +24,7 @@ export default function AnswerFeedback({ messageId }: { messageId: number }) {
     setRating(value);
     setSaved(false);
     try {
-      await apiFetch(`/api/chat/messages/${messageId}/feedback`, {
+      await apiJson(`/api/chat/messages/${messageId}/feedback`, {
         method: "POST",
         auth: true,
         body: { rating: value, reason: why },

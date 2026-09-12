@@ -34,9 +34,9 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
     unit === "USD" ? `$${(v / 1_000_000).toFixed(0)}M` : `${v.toLocaleString()} ${unit}`;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <h2 className="text-sm font-semibold text-gray-900">Forecast</h2>
+        <h2 className="cx-panel-title">Forecast</h2>
         <span className="text-xs text-gray-500">shaded band = uncertainty interval</span>
       </div>
       {/* The chart is an SVG rendered by Recharts with no text equivalent of
@@ -47,9 +47,16 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-            <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={formatValue} tick={{ fontSize: 12 }} width={70} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200)" />
+            <XAxis
+              dataKey="period"
+              tick={{ fontSize: 11, fontFamily: "var(--font-mono)", fill: "var(--color-gray-500)" }}
+            />
+            <YAxis
+              tickFormatter={formatValue}
+              tick={{ fontSize: 11, fontFamily: "var(--font-mono)", fill: "var(--color-gray-500)" }}
+              width={70}
+            />
             <Tooltip content={<ForecastTooltip formatValue={formatValue} />} />
             <Area
               type="monotone"
@@ -64,17 +71,17 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
               dataKey="bandRange"
               stackId="band"
               stroke="none"
-              fill="#0d9488"
-              fillOpacity={0.15}
+              fill="var(--color-teal-500)"
+              fillOpacity={0.16}
               isAnimationActive={false}
               name="Confidence interval"
             />
             <Line
               type="monotone"
               dataKey="point"
-              stroke="#0d9488"
+              stroke="var(--color-teal-600)"
               strokeWidth={2}
-              dot={{ r: 4 }}
+              dot={{ r: 4, fill: "#fff", stroke: "var(--color-teal-600)", strokeWidth: 2 }}
               name="Forecast"
             />
           </ComposedChart>
@@ -128,8 +135,8 @@ function ForecastTooltip({
   if (point === undefined) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-md shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-gray-900 mb-1">{label}</p>
+    <div className="cx-panel-flat px-3 py-2 text-xs font-mono">
+      <p className="font-sans font-semibold text-gray-900 mb-1">{label}</p>
       <p className="text-teal-700">Forecast: {formatValue(point)}</p>
       {lower !== undefined && upper !== undefined && (
         <p className="text-gray-500">

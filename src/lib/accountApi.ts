@@ -1,5 +1,5 @@
-import { apiFetch } from "./apiFetch";
-import { getToken } from "./tokenStorage";
+import { getToken, setToken } from "./tokenStorage";
+import { apiFetch, apiJson } from "./apiFetch";
 
 /**
  * Real GET/PUT /api/account/preferences and the API-key routes, proxied
@@ -38,7 +38,7 @@ function authHeaders(): HeadersInit {
 }
 
 export async function fetchPreferences(): Promise<NotificationPreferences> {
-  const res = await fetch("/api/account/preferences", { headers: authHeaders() });
+  const res = await apiFetch("/api/account/preferences", { headers: authHeaders() });
   if (!res.ok) throw new Error(`Couldn't load preferences (${res.status}).`);
   return res.json();
 }
@@ -46,7 +46,7 @@ export async function fetchPreferences(): Promise<NotificationPreferences> {
 export async function savePreferences(
   prefs: NotificationPreferences
 ): Promise<NotificationPreferences> {
-  const res = await fetch("/api/account/preferences", {
+  const res = await apiFetch("/api/account/preferences", {
     method: "PUT",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify(prefs),
@@ -56,14 +56,14 @@ export async function savePreferences(
 }
 
 export async function fetchApiKeys(): Promise<ApiKeyItem[]> {
-  const res = await fetch("/api/account/api-keys", { headers: authHeaders() });
+  const res = await apiFetch("/api/account/api-keys", { headers: authHeaders() });
   if (!res.ok) throw new Error(`Couldn't load API keys (${res.status}).`);
   const data: { keys: ApiKeyItem[] } = await res.json();
   return data.keys;
 }
 
 export async function createApiKey(label: string): Promise<NewApiKey> {
-  const res = await fetch("/api/account/api-keys", {
+  const res = await apiFetch("/api/account/api-keys", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
     body: JSON.stringify({ label }),
@@ -73,11 +73,78 @@ export async function createApiKey(label: string): Promise<NewApiKey> {
 }
 
 export async function revokeApiKey(id: number): Promise<void> {
-  const res = await fetch(`/api/account/api-keys/${id}/revoke`, {
+  const res = await apiFetch(`/api/account/api-keys/${id}/revoke`, {
     method: "POST",
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`Couldn't revoke that key (${res.status}).`);
+}
+
+/**
+ * POST /api/account/password. Current password required (403 if wrong); the new
+ * one must differ and be 8+ chars (422).
+ *
+ * The change invalidates every session for the account server-side, so the
+ * response carries a fresh token — swapped in here so *this* device stays
+ * signed in while other sessions drop. Other tabs pick it up on their next
+ * request failing and re-reading storage; nothing else to do.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const res = await apiFetch("/api/account/password", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (res.ok) {
+    const { token } = (await res.json()) as { token?: string };
+    if (token) setToken(token);
+    return;
+  }
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 422) throw new Error("New password must be different and at least 8 characters.");
+  throw new Error(`Couldn't change password (${res.status}).`);
+}
+
+/**
+ * POST /api/account/email. Current password required (403). The change
+ * invalidates every session server-side, so the response is a fresh
+ * {token, email, role}. auth.tsx swaps it in — don't call this directly, use
+ * `useAuth().changeEmail`.
+ */
+export async function changeEmailApi(
+  currentPassword: string,
+  newEmail: string
+): Promise<{ token: string; email: string; role: string }> {
+  const res = await apiFetch("/api/account/email", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_email: newEmail }),
+  });
+  if (res.ok) return res.json();
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 409) throw new Error("That email is already in use.");
+  if (res.status === 422) throw new Error("That doesn't look like a valid email.");
+  throw new Error(`Couldn't change email (${res.status}).`);
+}
+
+/**
+ * DELETE /api/account. Current password required (403). Removes the account
+ * and its history / API keys / preferences. 409 if you're the last admin.
+ * Use `useAuth().deleteAccount`, which signs out afterwards.
+ */
+export async function deleteAccountApi(currentPassword: string): Promise<void> {
+  const res = await apiFetch("/api/account", {
+    method: "DELETE",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ current_password: currentPassword }),
+  });
+  if (res.ok) return;
+  if (res.status === 403) throw new Error("Current password is incorrect.");
+  if (res.status === 409) throw new Error("You're the last admin — make someone else an admin first.");
+  throw new Error(`Couldn't delete the account (${res.status}).`);
 }
 
 // --- usage and cost (backend deviation D15) ---------------------------------
@@ -125,22 +192,22 @@ export interface UserInstruction {
 
 export function fetchUsage(days = 30, scope: "user" | "all" = "user"): Promise<UsageSummary> {
   const path = scope === "all" ? "/api/usage/all" : "/api/usage/summary";
-  return apiFetch<UsageSummary>(`${path}?days=${days}`, { auth: true });
+  return apiJson<UsageSummary>(`${path}?days=${days}`, { auth: true });
 }
 
 export function fetchUsageLimits(): Promise<UsageLimits> {
-  return apiFetch<UsageLimits>("/api/usage/limits", { auth: true });
+  return apiJson<UsageLimits>("/api/usage/limits", { auth: true });
 }
 
 export function fetchInstructions(): Promise<UserInstruction> {
-  return apiFetch<UserInstruction>("/api/account/instructions", { auth: true });
+  return apiJson<UserInstruction>("/api/account/instructions", { auth: true });
 }
 
 export function saveInstructions(
   content: string,
   enabled: boolean,
 ): Promise<UserInstruction> {
-  return apiFetch<UserInstruction>("/api/account/instructions", {
+  return apiJson<UserInstruction>("/api/account/instructions", {
     method: "PUT",
     auth: true,
     body: { content, enabled },

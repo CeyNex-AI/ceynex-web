@@ -19,7 +19,7 @@
  * `done` frame saying it was cancelled, like any other ending.
  */
 
-import { authHeaders, optionalAuthHeaders } from "./apiFetch";
+import { apiFetch, authHeaders, optionalAuthHeaders } from "./apiFetch";
 import { FrameBuffer, SeqTracker, type SseFrame } from "./sse";
 import type { ClarifyPrompt } from "../components/ClarifyCard";
 import type { AnswerPayload, TraceEvent } from "../types/chat";
@@ -143,7 +143,7 @@ export async function streamRegenerate(
 
 /** Ask the server to stop a turn. Resolves to whether there was one to stop. */
 export async function cancelTurn(requestId: string): Promise<boolean> {
-  const res = await fetch(`/api/chat/turns/${encodeURIComponent(requestId)}/cancel`, {
+  const res = await apiFetch(`/api/chat/turns/${encodeURIComponent(requestId)}/cancel`, {
     method: "POST",
     headers: authHeaders(),
   });
@@ -224,7 +224,7 @@ async function open(
   init: { method: "GET" | "POST"; body?: Record<string, unknown> },
   signal?: AbortSignal,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: init.method,
     headers: {
       ...(init.body ? { "content-type": "application/json" } : {}),

@@ -1,20 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
+  type AuditLogItem,
   type DQFlagItem,
   type LLMStatus,
   type ModelSummary,
   type PipelineRunItem,
   type ProviderStatusItem,
+  type UserAdminItem,
+  createUser,
+  fetchAuditLog,
   fetchDQFlags,
   fetchLLMStatus,
   fetchModels,
   fetchPipelineStatus,
+  fetchUsers,
+  generatePassword,
   resolveDQFlag,
   retrainModel,
+  setUserDisabled,
+  setUserPassword,
+  setUserRole,
   triggerIngest,
 } from "../lib/adminApi";
-import { ROLE_LABELS } from "../lib/roles";
+import { ALL_ROLES, ROLE_LABELS, type Role } from "../lib/roles";
+import { type Theme } from "../lib/siteApi";
+import { useTheme } from "../lib/useTheme";
 import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
 import UsagePanel from "../components/UsagePanel";
@@ -47,9 +58,9 @@ function StatusRow({ label, up, note }: { label: string; up: boolean; note?: str
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
-      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-      {subtitle && <p className="text-xs text-gray-500 mt-0.5 mb-3">{subtitle}</p>}
+    <div className="cx-panel-flat p-5">
+      <h2 className="cx-panel-title">{title}</h2>
+      {subtitle && <p className="text-xs text-gray-500 mt-1 mb-3">{subtitle}</p>}
       {!subtitle && <div className="mt-3" />}
       {children}
     </div>
@@ -195,7 +206,7 @@ function ModelsCard() {
                   type="button"
                   disabled={busy}
                   onClick={() => handleRetrain(m)}
-                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                  className="cx-btn-secondary shrink-0 text-xs px-2.5 py-1"
                 >
                   {busy ? "Retraining…" : "Retrain"}
                 </button>
@@ -254,7 +265,7 @@ function PipelineCard() {
           type="button"
           disabled={ingesting !== null}
           onClick={() => handleIngest("apparel", ["edb", "jaaf"])}
-          className="text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 rounded-md px-3 py-1.5"
+          className="cx-btn-primary text-xs px-3 py-1.5"
         >
           {ingesting === "apparel" ? "Running…" : "Run ingest (EDB + JAAF)"}
         </button>
@@ -263,7 +274,7 @@ function PipelineCard() {
           disabled={ingesting !== null}
           onClick={() => handleIngest("comtrade", ["comtrade"])}
           title="Rate-limited and queried per HS code/year -- can take a minute or more"
-          className="text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-3 py-1.5"
+          className="cx-btn-secondary text-xs px-3 py-1.5"
         >
           {ingesting === "comtrade" ? "Running (can take a while)…" : "Run ingest (Comtrade, slow)"}
         </button>
@@ -376,7 +387,7 @@ function DQFlagsCard() {
                   type="button"
                   disabled={resolving === f.flag_id}
                   onClick={() => handleResolve(f.flag_id)}
-                  className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800 disabled:text-gray-300 border border-teal-200 disabled:border-gray-200 rounded-md px-2.5 py-1"
+                  className="cx-btn-secondary shrink-0 text-xs px-2.5 py-1"
                 >
                   {resolving === f.flag_id ? "Resolving…" : "Resolve"}
                 </button>
@@ -389,9 +400,358 @@ function DQFlagsCard() {
   );
 }
 
+/**
+ * Site-wide, not per-browser: flipping this changes what every visitor sees,
+ * signed in or not (src/lib/theme.tsx). There is deliberately no "preview"
+ * step -- the toggle *is* the change, same posture as Retrain/Resolve above.
+ */
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  const [saving, setSaving] = useState<Theme | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePick(next: Theme) {
+    if (next === theme || saving) return;
+    setSaving(next);
+    setError(null);
+    try {
+      await setTheme(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't change the site theme.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  const optionClass = (option: Theme) =>
+    `text-xs font-medium rounded-md px-3 py-1.5 border transition-colors ${
+      theme === option
+        ? "bg-teal-50 text-teal-700 border-teal-200"
+        : "text-gray-500 border-gray-200 hover:text-gray-700"
+    }`;
+
+  return (
+    <Card title="Appearance" subtitle="Changes what every visitor sees, not just this browser.">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={saving !== null}
+          onClick={() => handlePick("classic")}
+          aria-pressed={theme === "classic"}
+          className={optionClass("classic")}
+        >
+          {saving === "classic" ? "Saving…" : "Classic"}
+        </button>
+        <button
+          type="button"
+          disabled={saving !== null}
+          onClick={() => handlePick("signal-deck")}
+          aria-pressed={theme === "signal-deck"}
+          className={optionClass("signal-deck")}
+        >
+          {saving === "signal-deck" ? "Saving…" : "Signal Deck"}
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * RBAC (SRS 3.5.4): every account, its role, and its enabled state. The role
+ * dropdown and the disable/enable button are live actions -- same posture as
+ * Retrain/Resolve, no separate save step. The backend refuses (409) anything
+ * that would remove the last admin, and that message is shown inline rather
+ * than the change silently not sticking.
+ */
+function UsersCard({ currentEmail }: { currentEmail: string | null }) {
+  const [users, setUsers] = useState<UserAdminItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  // create form
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<Role>("researcher");
+  const [creating, setCreating] = useState(false);
+
+  // one-time reveal of a generated reset password
+  const [resetPw, setResetPw] = useState<{ email: string; password: string } | null>(null);
+
+  function reload() {
+    fetchUsers()
+      .then(setUsers)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load users."));
+  }
+
+  useEffect(reload, []);
+
+  async function runAction<T>(id: number, action: () => Promise<T>) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await action();
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That didn't work.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleResetPassword(u: UserAdminItem) {
+    setBusyId(u.id);
+    setError(null);
+    setResetPw(null);
+    try {
+      const password = generatePassword();
+      await setUserPassword(u.id, password);
+      setResetPw({ email: u.email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't reset that password.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!newEmail.trim() || newPassword.length < 8) {
+      setError("Enter an email and a password of at least 8 characters.");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createUser(newEmail.trim(), newPassword, newRole);
+      setNewEmail("");
+      setNewPassword("");
+      setNewRole("researcher");
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't create the user.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <Card title="Users" subtitle="Accounts, roles, and access. Changes take effect on the next sign-in.">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+
+      {resetPw && (
+        <div className="bg-teal-50 border border-teal-200 rounded-md px-4 py-3 space-y-2 mb-4">
+          <p className="text-xs text-teal-800">
+            New password for <span className="font-medium">{resetPw.email}</span> — copy it now, it
+            won't be shown again. Send it to them; they can change it from their Account page.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-white border border-teal-200 rounded px-2 py-1.5 overflow-x-auto whitespace-nowrap">
+              {resetPw.password}
+            </code>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(resetPw.password)}
+              className="text-xs font-medium text-teal-700 hover:text-teal-800 border border-teal-300 rounded px-2 py-1.5 shrink-0"
+            >
+              Copy
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setResetPw(null)}
+            className="text-xs text-teal-700 hover:text-teal-800"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
+        <div className="flex-1 min-w-[10rem]">
+          <label htmlFor="new-user-email" className="block text-xs font-medium text-gray-500 mb-1">
+            Email
+          </label>
+          <input
+            id="new-user-email"
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            className="cx-input w-full px-2.5 py-1.5 text-sm"
+            placeholder="person@org.lk"
+          />
+        </div>
+        <div className="min-w-[9rem]">
+          <label htmlFor="new-user-password" className="block text-xs font-medium text-gray-500 mb-1">
+            Temp password
+          </label>
+          <input
+            id="new-user-password"
+            type="text"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="off"
+            className="cx-input w-full px-2.5 py-1.5 text-sm"
+            placeholder="8+ characters"
+          />
+        </div>
+        <div>
+          <label htmlFor="new-user-role" className="block text-xs font-medium text-gray-500 mb-1">
+            Role
+          </label>
+          <select
+            id="new-user-role"
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value as Role)}
+            className="cx-input px-2.5 py-1.5 text-sm"
+          >
+            {ALL_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" disabled={creating} className="cx-btn-primary text-xs px-3 py-1.5">
+          {creating ? "Adding…" : "Add user"}
+        </button>
+      </form>
+
+      {!users && !error && <p className="text-sm text-gray-500">Loading…</p>}
+      {users && users.length === 0 && <p className="text-sm text-gray-500">No users yet.</p>}
+      {users && users.length > 0 && (
+        <ul className="space-y-1.5">
+          {users.map((u) => {
+            const isSelf = currentEmail !== null && u.email === currentEmail;
+            const busy = busyId === u.id;
+            return (
+              <li
+                key={u.id}
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 gap-y-1 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+              >
+                <span className={`truncate ${u.disabled ? "text-gray-500 line-through" : "text-gray-800"}`}>
+                  {u.email}
+                  {isSelf && <span className="text-gray-500 no-underline"> (you)</span>}
+                </span>
+                <select
+                  value={u.role}
+                  disabled={busy}
+                  onChange={(e) => runAction(u.id, () => setUserRole(u.id, e.target.value))}
+                  className="cx-input text-xs px-2 py-1"
+                  aria-label={`Role for ${u.email}`}
+                >
+                  {ALL_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => handleResetPassword(u)}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-800 disabled:text-gray-300 shrink-0"
+                  title={`Generate a new password for ${u.email}`}
+                >
+                  {busy ? "…" : "Reset pw"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => runAction(u.id, () => setUserDisabled(u.id, !u.disabled))}
+                  className="cx-btn-secondary text-xs px-2.5 py-1 shrink-0"
+                >
+                  {busy ? "…" : u.disabled ? "Enable" : "Disable"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/** SRS 3.4.7 — the trail every admin mutation already writes (RBAC changes,
+ * retrains, ingests, DQ-flag resolves), surfaced instead of only ever queried
+ * by hand. Read-only, newest first. */
+const ACTION_LABELS: Record<string, string> = {
+  create_user: "created user",
+  set_user_role: "changed role",
+  set_user_password: "reset password",
+  disable_user: "disabled user",
+  enable_user: "enabled user",
+  retrain: "retrained model",
+  pipeline_ingest: "ran ingest",
+  resolve_dq_flag: "resolved DQ flag",
+};
+
+function AuditLogCard() {
+  const [entries, setEntries] = useState<AuditLogItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetchAuditLog()
+      .then(setEntries)
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load the audit log."));
+  }, []);
+
+  const shown = entries && (expanded ? entries : entries.slice(0, 8));
+
+  return (
+    <Card title="Admin activity" subtitle="Every privileged action, newest first (SRS 3.4.7).">
+      {error && (
+        <p role="alert" className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+      )}
+      {!entries && !error && <p className="text-sm text-gray-500">Loading…</p>}
+      {entries && entries.length === 0 && (
+        <p className="text-sm text-gray-500">Nothing recorded yet.</p>
+      )}
+      {shown && shown.length > 0 && (
+        <ul className="space-y-1.5">
+          {shown.map((e) => (
+            <li
+              key={e.id}
+              className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 text-sm border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
+            >
+              <span className="min-w-0 truncate text-gray-800">
+                <span className="font-medium">{e.actor_email}</span>{" "}
+                <span className="text-gray-500">{ACTION_LABELS[e.action] ?? e.action}</span>
+                {e.target && <span className="text-gray-500"> · {e.target}</span>}
+              </span>
+              <span className="text-xs text-gray-500 shrink-0">{timeAgo(e.logged_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {entries && entries.length > 8 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-2 text-xs font-medium text-teal-700 hover:text-teal-800"
+        >
+          {expanded ? "Show fewer" : `Show all ${entries.length}`}
+        </button>
+      )}
+    </Card>
+  );
+}
+
 export default function Admin() {
   usePageTitle("Admin");
-  const { role } = useAuth();
+  const { role, userId } = useAuth();
   const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -411,8 +771,8 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
         <div className="max-w-sm mx-auto">
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
+          <div className="cx-panel-flat p-5">
             <p className="text-sm text-gray-600 leading-relaxed">
               This page is restricted to the Admin role. You're signed in as{" "}
               <span className="font-medium text-gray-800">
@@ -436,11 +796,17 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-3xl mx-auto space-y-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin</h1>
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
           <p className="text-sm text-gray-500">
             Retrain, ingest and data-quality review: real actions against the live system (SRS 3.5.4).
           </p>
         </div>
+
+        <UsersCard currentEmail={userId} />
+
+        <AuditLogCard />
+
+        <AppearanceCard />
 
         <Card title="System status">
           {healthError && (

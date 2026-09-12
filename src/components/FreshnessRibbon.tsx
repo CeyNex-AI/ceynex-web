@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "../lib/apiFetch";
+import { apiJson } from "../lib/apiFetch";
 
 interface Freshness {
   available: boolean;
@@ -33,7 +33,7 @@ export default function FreshnessRibbon() {
 
   useEffect(() => {
     let live = true;
-    apiFetch<Freshness>("/api/data/freshness", { auth: true })
+    apiJson<Freshness>("/api/data/freshness", { auth: true })
       .then((value) => live && setData(value))
       .catch(() => {
         /* A ribbon is not worth an error banner. */

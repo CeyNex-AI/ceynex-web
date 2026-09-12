@@ -3,13 +3,14 @@ import cytoscape, { type Core, type NodeSingular } from "cytoscape";
 import { expandNode } from "../lib/graphApi";
 import {
   EXPANDED_RING,
+  buildStylesheet,
   highlightNeighbourhood,
   layoutOptions,
   placeAround,
   relationshipLabel,
-  STYLESHEET,
   toElements,
 } from "../lib/graphStyle";
+import { useTheme } from "../lib/useTheme";
 import type { AnswerGraph, GraphNode } from "../types/contracts";
 
 /**
@@ -102,13 +103,15 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
     }
   }, []);
 
+  const { theme } = useTheme();
+
   useEffect(() => {
     if (!containerRef.current) return;
 
     const cy = cytoscape({
       container: containerRef.current,
       elements: toElements(graph.nodes, graph.edges),
-      style: STYLESHEET,
+      style: buildStylesheet(theme),
       layout: layoutOptions(false),
       // Zoom bounds rather than free scroll: past these the drawing is either
       // one enormous circle or an unreadable speck, and both look like a bug.
@@ -145,12 +148,12 @@ export default function KnowledgeGraphPanel({ graph }: { graph: AnswerGraph }) {
       cy.destroy();
       cyRef.current = null;
     };
-  }, [graph, handleExpand]);
+  }, [graph, handleExpand, theme]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="cx-panel p-4">
       <div className="flex items-baseline justify-between gap-3 mb-2">
-        <h2 className="text-sm font-semibold text-gray-900">Knowledge graph</h2>
+        <h2 className="cx-panel-title">Knowledge graph</h2>
         <span className="text-xs text-gray-500">
           {counts.nodes} nodes · {counts.edges} connections
           {graph.truncated && " · showing the largest"}

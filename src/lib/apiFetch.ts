@@ -1,11 +1,20 @@
 /**
- * One place for the three things every `*Api.ts` module was doing by hand.
+ * `fetch` for the CeyNex API, in two shapes over one wire.
  *
- * Before this, `authHeaders()` was copy-pasted verbatim into historyApi,
- * accountApi and adminApi, and each module spelled its own `res.ok` check. That
- * was survivable at seven modules; the conversational layer adds several more
- * and roughly ten components, and the duplication compounds rather than staying
- * flat.
+ * **`apiFetch`** has the same signature and return value as `fetch`. Its one
+ * added behaviour is that a `401` on a request that carried a bearer token
+ * trips a session-expired handler. `auth.tsx` verifies a stored token against
+ * `/api/auth/me` on load, but that only catches an ended session at load time.
+ * Once a page is open, a session cut from another device (a password change, a
+ * role change, a disable) shows up as the *next* API call coming back 401. This
+ * routes that into the same "you were signed out" path instead of a bare error
+ * toast. Login and signup keep plain `fetch` (a 401 there is a wrong password,
+ * not an ended session), which the bearer-token check below would exclude anyway.
+ *
+ * **`apiJson`** is the typed helper the conversational layer's modules use: it
+ * sends the token, encodes the body, checks `res.ok`, and parses the JSON,
+ * throwing an `ApiError` that carries the status. It is built on `apiFetch`, so
+ * an ended session reached through a chat call takes the same sign-out path.
  *
  * Deliberately not an axios instance or a client class. Every call in this
  * codebase is a relative `fetch` that rides the Vite dev proxy and nginx in
@@ -15,7 +24,31 @@
 
 import { getToken } from "./tokenStorage";
 
-/** Thrown by every helper below, carrying the status so callers can branch. */
+let onSessionExpired: (() => void) | null = null;
+
+export function setSessionExpiredHandler(fn: (() => void) | null): void {
+  onSessionExpired = fn;
+}
+
+export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const res = await fetch(input, init);
+  // Only a token that the server rejected counts — not an anonymous call, and
+  // not a 401 after we've already signed out (getToken() would be null).
+  if (res.status === 401 && hadBearerToken(init) && getToken()) {
+    onSessionExpired?.();
+  }
+  return res;
+}
+
+function hadBearerToken(init: RequestInit): boolean {
+  const h = init.headers;
+  if (!h) return false;
+  if (h instanceof Headers) return h.has("authorization");
+  if (Array.isArray(h)) return h.some(([k]) => k.toLowerCase() === "authorization");
+  return Object.keys(h as Record<string, string>).some((k) => k.toLowerCase() === "authorization");
+}
+
+/** Thrown by `apiJson`, carrying the status so callers can branch. */
 export class ApiError extends Error {
   // Declared and assigned rather than a constructor parameter property:
   // tsconfig sets `erasableSyntaxOnly`, which forbids the shorthand.
@@ -71,7 +104,7 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
-export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function apiJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth, optionalAuth, signal } = options;
 
   const headers: Record<string, string> = {};
@@ -81,7 +114,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     auth ? authHeaders() : optionalAuth ? optionalAuthHeaders() : {},
   );
 
-  const res = await fetch(path, {
+  const res = await apiFetch(path, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

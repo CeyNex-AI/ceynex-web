@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useLocation, type Location } from "react-router-dom";
+import { Link, Navigate, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 import usePageTitle from "../lib/usePageTitle";
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLE_LABELS } from "../lib/roles";
 
 const FEATURES = [
   {
@@ -25,7 +24,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { userId, loading, login } = useAuth();
+  const { userId, loading, login, sessionExpired } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/query";
 
@@ -83,7 +82,7 @@ export default function Login() {
               <li key={feature.title} className="flex gap-3">
                 <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{feature.title}</p>
+                  <p className="font-display text-sm font-bold text-gray-900">{feature.title}</p>
                   <p className="text-sm text-gray-500 mt-0.5 max-w-sm">{feature.detail}</p>
                 </div>
               </li>
@@ -105,10 +104,13 @@ export default function Login() {
             </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white border border-gray-200 rounded-lg p-6 space-y-4"
-          >
+          {sessionExpired && !error && (
+            <p role="status" className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+              You were signed out — your session ended or your account access changed. Sign in again to continue.
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="cx-panel p-6 space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -119,7 +121,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="cx-input w-full px-3 py-2 text-sm"
                 placeholder="you@example.com"
               />
             </div>
@@ -134,7 +136,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="cx-input w-full px-3 py-2 text-sm"
                 placeholder="••••••••"
               />
             </div>
@@ -148,37 +150,18 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-700 hover:bg-teal-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md px-4 py-2.5 transition-colors"
+              className="cx-btn-primary w-full disabled:cursor-not-allowed text-sm px-4 py-2.5"
             >
               {submitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Demo accounts, password <span className="font-mono">{DEMO_PASSWORD}</span> for all.
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-teal-700 hover:text-teal-800 font-medium">
+              Sign up
+            </Link>
           </p>
-
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 text-center">
-              Try a demo role
-            </p>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {Object.entries(DEMO_ACCOUNTS).map(([demoEmail, role]) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  onClick={() => {
-                    setEmail(demoEmail);
-                    setPassword(DEMO_PASSWORD);
-                    setError(null);
-                  }}
-                  className="text-xs text-gray-500 hover:text-teal-700 bg-white border border-gray-200 rounded-full px-3 py-1"
-                >
-                  {ROLE_LABELS[role]}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

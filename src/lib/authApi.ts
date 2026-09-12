@@ -32,6 +32,34 @@ export async function loginApi(email: string, password: string): Promise<LoginRe
   return res.json();
 }
 
+/**
+ * POST /api/auth/signup -- creates an account at the backend's default role
+ * and returns the same shape as login, so the caller can drop straight into a
+ * signed-in session. 409 means the email is already taken; 422 is a password
+ * the backend rejected as too short (the form checks length first, so this is
+ * the belt-and-braces case).
+ */
+export async function signupApi(
+  email: string,
+  password: string,
+  role?: string
+): Promise<LoginResult> {
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(role ? { email, password, role } : { email, password }),
+  });
+
+  if (!res.ok) {
+    if (res.status === 409) throw new Error("An account with that email already exists.");
+    if (res.status === 403) throw new Error("You can't sign up as an admin.");
+    if (res.status === 422) throw new Error("Check the password (8+ characters) and role.");
+    throw new Error(`Sign up failed (${res.status}).`);
+  }
+
+  return res.json();
+}
+
 export async function fetchMe(token: string): Promise<MeResult> {
   const res = await fetch("/api/auth/me", {
     headers: { authorization: `Bearer ${token}` },

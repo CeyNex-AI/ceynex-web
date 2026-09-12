@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  changePassword,
   createApiKey,
   fetchApiKeys,
   fetchPreferences,
@@ -10,6 +11,7 @@ import {
   type NewApiKey,
   type NotificationPreferences,
 } from "../lib/accountApi";
+import PasswordStrength from "../components/PasswordStrength";
 import { ROLE_LABELS } from "../lib/roles";
 import { useAuth } from "../lib/useAuth";
 import InstructionsEditor from "../components/InstructionsEditor";
@@ -24,7 +26,7 @@ const PREFERENCE_LABELS: Record<keyof NotificationPreferences, string> = {
 
 export default function Account() {
   usePageTitle("Account");
-  const { userId, role, logout } = useAuth();
+  const { userId, role, logout, changeEmail, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
@@ -40,6 +42,25 @@ export default function Account() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [justCreated, setJustCreated] = useState<NewApiKey | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaved, setPwSaved] = useState(false);
+
+  const [emailNew, setEmailNew] = useState("");
+  const [emailPw, setEmailPw] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSaved, setEmailSaved] = useState(false);
+
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletePw, setDeletePw] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPreferences()
@@ -94,6 +115,36 @@ export default function Account() {
     }
   }
 
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwSaved(false);
+    if (pwNew.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("The two new passwords don't match.");
+      return;
+    }
+    if (pwNew === pwCurrent) {
+      setPwError("New password must be different from the current one.");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await changePassword(pwCurrent, pwNew);
+      setPwSaved(true);
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : "Couldn't change password.");
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
   async function handleRevoke(id: number) {
     setRevokingId(id);
     setKeysError(null);
@@ -107,15 +158,57 @@ export default function Account() {
     }
   }
 
+  async function handleChangeEmail(e: FormEvent) {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSaved(false);
+    if (!emailNew.trim() || !emailPw) {
+      setEmailError("Enter the new email and your current password.");
+      return;
+    }
+    if (emailNew.trim().toLowerCase() === userId?.toLowerCase()) {
+      setEmailError("That's already your email.");
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      await changeEmail(emailPw, emailNew.trim());
+      setEmailSaved(true);
+      setEmailNew("");
+      setEmailPw("");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Couldn't change email.");
+    } finally {
+      setEmailSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount(e: FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+    if (deleteConfirm !== "DELETE") {
+      setDeleteError('Type DELETE to confirm.');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePw);
+      navigate("/");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Couldn't delete the account.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-md mx-auto space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Account</h1>
-          <p className="text-sm text-gray-500">Your CeyNex session, how answers are written, usage and limits, and API keys.</p>
+          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Account</h1>
+          <p className="text-sm text-gray-500">Your CeyNex session, sign-in details, preferences, how answers are written, usage and limits, and API keys.</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <div className="cx-panel-flat p-6 space-y-4">
           <div>
             <div className="text-xs font-medium text-gray-500 mb-1">Signed in as</div>
             <div className="text-sm text-gray-800">{userId ?? "Not signed in"}</div>
@@ -128,20 +221,109 @@ export default function Account() {
               </span>
             </div>
           )}
-          <p className="text-xs text-gray-500">
-            Demo login: four fixed accounts, no self-service signup.
-          </p>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium border border-gray-300 rounded-md px-4 py-2.5 transition-colors"
-          >
+          <button type="button" onClick={handleLogout} className="cx-btn-secondary w-full text-sm px-4 py-2.5">
             Sign out
           </button>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Notification preferences</h2>
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">Password</h2>
+          <p className="text-xs text-gray-500">
+            You'll stay signed in on this device after changing it.
+          </p>
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            <input
+              type="password"
+              value={pwCurrent}
+              onChange={(e) => setPwCurrent(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Current password"
+              aria-label="Current password"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            <div>
+              <input
+                type="password"
+                value={pwNew}
+                onChange={(e) => setPwNew(e.target.value)}
+                autoComplete="new-password"
+                placeholder="New password (8+ characters)"
+                aria-label="New password"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              <PasswordStrength password={pwNew} />
+            </div>
+            <input
+              type="password"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              autoComplete="new-password"
+              placeholder="Confirm new password"
+              aria-label="Confirm new password"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            {pwError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                {pwError}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}
+                className="cx-btn-primary text-sm px-4 py-2"
+              >
+                {pwSaving ? "Changing..." : "Change password"}
+              </button>
+              {pwSaved && !pwSaving && <span className="text-xs text-teal-700">Password changed.</span>}
+            </div>
+          </form>
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">Email</h2>
+          <p className="text-xs text-gray-500">
+            Your history and API keys move with it. Other devices are signed out; this one stays in.
+          </p>
+          <form onSubmit={handleChangeEmail} className="space-y-3">
+            <input
+              type="email"
+              value={emailNew}
+              onChange={(e) => setEmailNew(e.target.value)}
+              autoComplete="email"
+              placeholder="New email"
+              aria-label="New email"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            <input
+              type="password"
+              value={emailPw}
+              onChange={(e) => setEmailPw(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Current password"
+              aria-label="Current password to confirm the email change"
+              className="cx-input w-full text-sm px-3 py-2"
+            />
+            {emailError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                {emailError}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={emailSaving || !emailNew || !emailPw}
+                className="cx-btn-primary text-sm px-4 py-2"
+              >
+                {emailSaving ? "Changing..." : "Change email"}
+              </button>
+              {emailSaved && !emailSaving && <span className="text-xs text-teal-700">Email changed.</span>}
+            </div>
+          </form>
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">Notification preferences</h2>
           <p className="text-xs text-gray-500">
             What you'd be notified about, once a delivery channel exists for it. These are saved
             now; nothing is sent yet.
@@ -168,11 +350,7 @@ export default function Account() {
                 </p>
               )}
               <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={prefsSaving}
-                  className="bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors"
-                >
+                <button type="submit" disabled={prefsSaving} className="cx-btn-primary text-sm px-4 py-2">
                   {prefsSaving ? "Saving..." : "Save"}
                 </button>
                 {prefsSaved && !prefsSaving && <span className="text-xs text-teal-700">Saved.</span>}
@@ -184,12 +362,12 @@ export default function Account() {
         <InstructionsEditor />
 
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Usage and limits</h2>
+          <h2 className="cx-panel-title">Usage and limits</h2>
           <UsagePanel />
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">API keys</h2>
+        <div className="cx-panel-flat p-6 space-y-4">
+          <h2 className="cx-panel-title">API keys</h2>
           <p className="text-xs text-gray-500">
             For programmatic access to the query API. A key authenticates the same way your login
             session does, at your account's current role.
@@ -267,12 +445,12 @@ export default function Account() {
               onChange={(e) => setNewKeyLabel(e.target.value)}
               placeholder="Label, e.g. CI pipeline"
               maxLength={100}
-              className="flex-1 min-w-0 text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="cx-input flex-1 min-w-0 text-sm px-3 py-2"
             />
             <button
               type="submit"
               disabled={creating || !newKeyLabel.trim()}
-              className="bg-teal-700 hover:bg-teal-800 disabled:bg-gray-300 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0"
+              className="cx-btn-primary text-sm px-4 py-2 shrink-0"
             >
               {creating ? "Creating..." : "New key"}
             </button>
@@ -281,6 +459,69 @@ export default function Account() {
             <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
               {createError}
             </p>
+          )}
+        </div>
+
+        <div className="cx-panel-flat p-6 space-y-3 border border-red-200">
+          <h2 className="cx-panel-title text-red-700">Delete account</h2>
+          <p className="text-xs text-gray-500">
+            Permanent. Removes your account, saved queries, history, and API keys. There's no undo.
+          </p>
+          {!showDelete ? (
+            <button
+              type="button"
+              onClick={() => setShowDelete(true)}
+              className="text-sm font-medium text-red-700 hover:text-red-800 border border-red-300 rounded-md px-3 py-2"
+            >
+              Delete my account
+            </button>
+          ) : (
+            <form onSubmit={handleDeleteAccount} className="space-y-3">
+              <input
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                autoComplete="off"
+                placeholder="Type DELETE to confirm"
+                aria-label="Type DELETE to confirm account deletion"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              <input
+                type="password"
+                value={deletePw}
+                onChange={(e) => setDeletePw(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Current password"
+                aria-label="Current password to confirm account deletion"
+                className="cx-input w-full text-sm px-3 py-2"
+              />
+              {deleteError && (
+                <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                  {deleteError}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={deleting || deleteConfirm !== "DELETE" || !deletePw}
+                  className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-md px-4 py-2"
+                >
+                  {deleting ? "Deleting..." : "Permanently delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDelete(false);
+                    setDeleteConfirm("");
+                    setDeletePw("");
+                    setDeleteError(null);
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </div>

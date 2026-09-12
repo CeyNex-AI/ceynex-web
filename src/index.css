@@ -1,1 +1,282 @@
+@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
+
+/**
+ * "Classic" is the default look everyone sees -- Tailwind's own stock
+ * palette and fonts, and the plain bordered-card shapes this app has always
+ * used. Nothing in this @theme block departs from Tailwind's defaults; it
+ * only registers the `font-display`/`font-mono` utility *names* so they
+ * exist as real classes; in classic mode they're just aliases for the
+ * ordinary sans/mono stacks, and font-sans / gray / emerald / amber / red are
+ * genuinely unmodified.
+ *
+ * "Signal Deck" (see the [data-theme="signal-deck"] block below) is an
+ * optional theme, applied site-wide only after an admin turns it on from the
+ * Admin page (src/lib/theme.tsx fetches GET /api/site/theme and stamps the
+ * attribute on <html>) -- never a per-component choice. It overrides exactly
+ * these same custom properties, which is what lets every existing gray,
+ * emerald, amber, and red utility class react to it without any component
+ * changes.
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background: var(--color-gray-50);
+  font-family: var(--font-sans);
+}
+
+/**
+ * "Signal Deck" theme overrides. Inert until <html data-theme="signal-deck">
+ * is set. The teal accent scale is deliberately left alone in both themes --
+ * it's the real brand colour, already baked into the deployed logo/favicon
+ * raster assets, so re-hueing it risks a mismatch there for no real gain.
+ * This theme instead leans on: a teal-tinted neutral scale in place of flat
+ * gray, a validated status palette distinct from the accent, Manrope/
+ * Unbounded/IBM Plex Mono, and the shape system in the `cx-*` classes below.
+ */
+[data-theme="signal-deck"] {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded", "Manrope", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-gray-50: #eff7f5;
+  --color-gray-100: #e1f0eb;
+  --color-gray-200: #d2e6df;
+  --color-gray-300: #b4d1c8;
+  --color-gray-400: #86a89f;
+  --color-gray-500: #5f8178;
+  --color-gray-600: #46645c;
+  --color-gray-700: #324b44;
+  --color-gray-800: #1e322d;
+  --color-gray-900: #0c1e1a;
+
+  /* Validated for CVD separation and a normal-vision floor (dataviz skill
+   * reference/palette.md) -- kept distinct from the teal accent so a status
+   * colour never impersonates it. */
+  --color-emerald-50: #e9faea;
+  --color-emerald-500: #0ca30c;
+  --color-emerald-700: #0a7f0a;
+  --color-amber-50: #fdf3e2;
+  --color-amber-500: #d98a00;
+  --color-amber-600: #b97300;
+  --color-amber-700: #8f5900;
+  --color-red-50: #fdecec;
+  --color-red-200: #f3c6c6;
+  --color-red-500: #d03b3b;
+  --color-red-600: #b52e2e;
+  --color-red-700: #8f2323;
+  --color-red-800: #6f1a1a;
+
+  /* Named aliases for the confidence gauge, which takes colour as an SVG
+   * attribute value rather than a className. */
+  --color-status-good: var(--color-emerald-500);
+  --color-status-warning: var(--color-amber-500);
+  --color-status-serious: #d9622f;
+  --color-status-critical: var(--color-red-500);
+}
+
+/* ---- nav -------------------------------------------------------------- */
+
+/* Classic (default): no hairline, the nav's own border-b carries the edge. */
+.cx-nav-hairline {
+  display: none;
+}
+[data-theme="signal-deck"] .cx-nav-hairline {
+  display: block;
+  background: linear-gradient(90deg, var(--color-teal-800), var(--color-teal-500) 55%, var(--color-teal-300));
+}
+
+/* ---- panel titles ------------------------------------------------------- */
+
+/* Classic (default): the original plain heading every panel/card used. */
+.cx-panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+/* Signal Deck: a small-caps eyebrow label instead -- the notch/hairline
+ * treatment already signals "this is a panel", so its title can recede. */
+[data-theme="signal-deck"] .cx-panel-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-500);
+}
+
+/* ---- shared shape language -------------------------------------------- */
+
+/**
+ * Classic (default): the plain bordered card this app has always used.
+ * `cx-panel` and `cx-panel-flat` are the same shape here -- the distinction
+ * (hero content vs. dense repeated lists) only matters once Signal Deck's
+ * cut-corner treatment exists to reserve for the former.
+ */
+.cx-panel,
+.cx-panel-flat {
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+}
+
+/**
+ * Signal Deck: a cut top-right corner (a manifest/customs-stamp notch)
+ * topped with a hairline gradient, reserved for hero content -- the answer,
+ * forecast, evidence, login form. `cx-panel-flat` stays a plain rounded card
+ * (just a bit more radius): a shape spent on every item in a long list
+ * (Admin, Account, Help's FAQ) stops reading as a shape at all.
+ */
+[data-theme="signal-deck"] .cx-panel {
+  position: relative;
+  border-radius: 0;
+  box-shadow:
+    0 1px 2px rgba(12, 30, 26, 0.04),
+    0 10px 24px -16px rgba(12, 30, 26, 0.22);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+[data-theme="signal-deck"] .cx-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-teal-800), var(--color-teal-500) 60%, var(--color-teal-300));
+}
+[data-theme="signal-deck"] .cx-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  background: var(--color-gray-50);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  border-left: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+[data-theme="signal-deck"] .cx-panel-flat {
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(12, 30, 26, 0.03);
+}
+
+/* ---- buttons ------------------------------------------------------------ */
+
+/* Classic (default): the original solid-teal button this app has always had,
+ * one step darker than it started. White on teal-600 is 3.66:1, under WCAG AA's
+ * 4.5:1 for text (SRS 3.2.3), and axe flagged every primary button for it;
+ * teal-700 passes, and hover goes one darker again. */
+.cx-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: #fff;
+  background: var(--color-teal-700);
+  border: none;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+.cx-btn-primary:hover:not(:disabled) {
+  background: var(--color-teal-800);
+}
+.cx-btn-primary:disabled {
+  background: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.cx-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--color-teal-700);
+  background: #fff;
+  border: 1px solid var(--color-teal-200);
+  border-radius: 6px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.cx-btn-secondary:hover:not(:disabled) {
+  color: var(--color-teal-800);
+}
+.cx-btn-secondary:disabled {
+  color: var(--color-gray-300);
+  border-color: var(--color-gray-200);
+  cursor: not-allowed;
+}
+
+[data-theme="signal-deck"] .cx-btn-primary {
+  gap: 0.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-teal-800), var(--color-teal-600));
+  border-radius: 10px;
+  transition: filter 0.15s ease;
+}
+[data-theme="signal-deck"] .cx-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-teal-800), var(--color-teal-600));
+  filter: brightness(1.08);
+}
+
+[data-theme="signal-deck"] .cx-btn-secondary {
+  font-weight: 600;
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+  border-radius: 10px;
+}
+[data-theme="signal-deck"] .cx-btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-teal-500);
+  color: var(--color-teal-700);
+}
+[data-theme="signal-deck"] .cx-btn-secondary:disabled {
+  border-color: var(--color-gray-200);
+}
+
+/* ---- inputs -------------------------------------------------------------- */
+
+.cx-input {
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+.cx-input:focus {
+  outline: 2px solid var(--color-teal-500);
+  outline-offset: 1px;
+  border-color: var(--color-teal-500);
+}
+
+[data-theme="signal-deck"] .cx-input {
+  border-radius: 10px;
+}
+
+/* ---- chips ---------------------------------------------------------------- */
+
+.cx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-gray-200);
+  background: #fff;
+  color: var(--color-gray-500);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.cx-chip:hover {
+  color: var(--color-teal-700);
+}
+
+[data-theme="signal-deck"] .cx-chip:hover {
+  border-color: var(--color-teal-300);
+}
