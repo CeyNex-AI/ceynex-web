@@ -149,7 +149,7 @@ const FAQS: { q: string; a: string; category: (typeof CATEGORIES)[number]["id"] 
   },
   {
     q: "Can I save a question for later?",
-    a: "Yes, in Single question mode: click the star (☆) next to any entry in Recent queries to bookmark it, and switch the All / Saved toggle above the list to see just your starred ones. Saving doesn't re-run the question, it just marks that entry for easy access later.",
+    a: "Yes, in both modes. In Chat, click the star below an answer to bookmark it. In Single question mode, do the same from any entry in Recent queries, and switch the All / Saved toggle above the list to see just your starred ones. Either way, saving doesn't re-run the question, it just marks it for easy access later.",
     category: "account",
   },
   {
