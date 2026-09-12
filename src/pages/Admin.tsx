@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   type AuditLogItem,
@@ -23,6 +23,7 @@ import {
   setUserRole,
   triggerIngest,
 } from "../lib/adminApi";
+import { fetchUsage, type UsageSummary } from "../lib/accountApi";
 import { ALL_ROLES, ROLE_LABELS, type Role } from "../lib/roles";
 import { type Theme } from "../lib/siteApi";
 import { useTheme } from "../lib/useTheme";
@@ -749,12 +750,233 @@ function AuditLogCard() {
   );
 }
 
+const SECTIONS = [
+  { id: "users", label: "Users" },
+  { id: "system", label: "System" },
+  { id: "models", label: "Models" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "dq", label: "Data quality" },
+  { id: "usage", label: "Usage" },
+  { id: "activity", label: "Activity" },
+  { id: "appearance", label: "Appearance" },
+] as const;
+
+type Section = "overview" | (typeof SECTIONS)[number]["id"];
+
+/**
+ * The nav for jumping between sections, and the section-picker inside each
+ * overview tile's "View" button both drive the same `section` state --
+ * a toggle-group of buttons (`aria-pressed`), the same pattern
+ * `QueryWorkspace`'s Chat/Single-question switch already uses, rather than a
+ * full ARIA tabs widget this codebase has no keyboard-arrow handling for yet.
+ */
+function SectionNav({ section, onChange }: { section: Section; onChange: (s: Section) => void }) {
+  const items: { id: Section; label: string }[] = [{ id: "overview", label: "Overview" }, ...SECTIONS];
+  return (
+    <div
+      role="group"
+      aria-label="Admin sections"
+      className="flex flex-wrap items-center gap-1 text-sm border-b border-gray-200 pb-3"
+    >
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          aria-pressed={section === item.id}
+          className={`px-2.5 py-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2
+                      focus-visible:outline-teal-600 ${
+                        section === item.id
+                          ? "bg-teal-50 text-teal-700 font-medium"
+                          : "text-gray-500 hover:text-gray-900"
+                      }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One at-a-glance tile on the Overview tab: the basics, and a way to see more. */
+function SummaryTile({ title, onView, children }: { title: string; onView: () => void; children: ReactNode }) {
+  return (
+    <div className="cx-panel-flat p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onView}
+          className="text-xs font-medium text-teal-700 hover:text-teal-800 shrink-0"
+        >
+          View <span aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div className="text-sm text-gray-600 min-h-[1.25rem]">{children}</div>
+    </div>
+  );
+}
+
+function UsersSummary({ onView }: { onView: () => void }) {
+  const [users, setUsers] = useState<UserAdminItem[] | null>(null);
+  useEffect(() => {
+    fetchUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]));
+  }, []);
+  if (!users) return <SummaryTile title="Users" onView={onView}>Loading…</SummaryTile>;
+  const admins = users.filter((u) => u.role === "admin").length;
+  const disabled = users.filter((u) => u.disabled).length;
+  return (
+    <SummaryTile title="Users" onView={onView}>
+      {users.length} account{users.length === 1 ? "" : "s"} · {admins} admin{admins === 1 ? "" : "s"}
+      {disabled > 0 && ` · ${disabled} disabled`}
+    </SummaryTile>
+  );
+}
+
+function SystemSummary({
+  onView,
+  health,
+  healthError,
+}: {
+  onView: () => void;
+  health: HealthResponse | null;
+  healthError: string | null;
+}) {
+  const [llm, setLLM] = useState<LLMStatus | null>(null);
+  useEffect(() => {
+    fetchLLMStatus()
+      .then(setLLM)
+      .catch(() => setLLM(null));
+  }, []);
+  return (
+    <SummaryTile title="System" onView={onView}>
+      {healthError && <span className="text-gray-500">{healthError}</span>}
+      {!healthError && !health && "Checking…"}
+      {health && (
+        <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+          <StatusDot dot={health.postgres ? "bg-emerald-500" : "bg-red-500"} label="Postgres" />
+          <StatusDot dot={health.neo4j ? "bg-emerald-500" : "bg-red-500"} label="Neo4j" />
+          <StatusDot dot={health.llm ? "bg-emerald-500" : "bg-red-500"} label="LLM" />
+          {llm && (
+            <StatusDot dot={PROVIDER_STATUS_STYLE[llm.openai.status].dot} label="OpenAI" />
+          )}
+          {llm && (
+            <StatusDot dot={PROVIDER_STATUS_STYLE[llm.openrouter.status].dot} label="Failsafe" />
+          )}
+        </span>
+      )}
+    </SummaryTile>
+  );
+}
+
+function StatusDot({ dot, label }: { dot: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {label}
+    </span>
+  );
+}
+
+function ModelsSummary({ onView }: { onView: () => void }) {
+  const [models, setModels] = useState<ModelSummary[] | null>(null);
+  useEffect(() => {
+    fetchModels()
+      .then(setModels)
+      .catch(() => setModels([]));
+  }, []);
+  if (!models) return <SummaryTile title="Models" onView={onView}>Loading…</SummaryTile>;
+  return (
+    <SummaryTile title="Models" onView={onView}>
+      {models.length === 0 ? "No models registered yet." : `${models.length} registered forecast model${models.length === 1 ? "" : "s"}`}
+    </SummaryTile>
+  );
+}
+
+function PipelineSummary({ onView }: { onView: () => void }) {
+  const [runs, setRuns] = useState<PipelineRunItem[] | null>(null);
+  useEffect(() => {
+    fetchPipelineStatus()
+      .then(setRuns)
+      .catch(() => setRuns([]));
+  }, []);
+  if (!runs) return <SummaryTile title="Pipeline" onView={onView}>Loading…</SummaryTile>;
+  if (runs.length === 0) return <SummaryTile title="Pipeline" onView={onView}>No ingest runs yet.</SummaryTile>;
+  const last = runs[0];
+  return (
+    <SummaryTile title="Pipeline" onView={onView}>
+      Last: {last.source_id} · {last.status} · {timeAgo(last.started_at)}
+    </SummaryTile>
+  );
+}
+
+function DQSummary({ onView }: { onView: () => void }) {
+  const [flags, setFlags] = useState<DQFlagItem[] | null>(null);
+  useEffect(() => {
+    fetchDQFlags()
+      .then(setFlags)
+      .catch(() => setFlags([]));
+  }, []);
+  if (!flags) return <SummaryTile title="Data quality" onView={onView}>Loading…</SummaryTile>;
+  const unresolved = flags.filter((f) => !f.resolved).length;
+  return (
+    <SummaryTile title="Data quality" onView={onView}>
+      {unresolved === 0 ? "No unresolved flags." : `${unresolved} unresolved of ${flags.length}`}
+    </SummaryTile>
+  );
+}
+
+function UsageSummaryTile({ onView }: { onView: () => void }) {
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
+  useEffect(() => {
+    fetchUsage(7, "all")
+      .then(setUsage)
+      .catch(() => setUsage(null));
+  }, []);
+  return (
+    <SummaryTile title="Usage" onView={onView}>
+      {usage
+        ? `$${usage.total_cost_usd.toFixed(2)} · ${usage.total_calls.toLocaleString()} model calls, last 7 days`
+        : "Loading…"}
+    </SummaryTile>
+  );
+}
+
+function ActivitySummary({ onView }: { onView: () => void }) {
+  const [entries, setEntries] = useState<AuditLogItem[] | null>(null);
+  useEffect(() => {
+    fetchAuditLog()
+      .then(setEntries)
+      .catch(() => setEntries([]));
+  }, []);
+  if (!entries) return <SummaryTile title="Activity" onView={onView}>Loading…</SummaryTile>;
+  if (entries.length === 0) return <SummaryTile title="Activity" onView={onView}>Nothing recorded yet.</SummaryTile>;
+  const last = entries[0];
+  return (
+    <SummaryTile title="Activity" onView={onView}>
+      {last.actor_email} {ACTION_LABELS[last.action] ?? last.action} · {timeAgo(last.logged_at)}
+    </SummaryTile>
+  );
+}
+
+function AppearanceSummary({ onView }: { onView: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <SummaryTile title="Appearance" onView={onView}>
+      Site theme: {theme === "signal-deck" ? "Signal Deck" : "Classic"}
+    </SummaryTile>
+  );
+}
+
 export default function Admin() {
   usePageTitle("Admin");
   const { role, userId } = useAuth();
   const isAdmin = role === "admin";
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>("overview");
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -802,47 +1024,70 @@ export default function Admin() {
           </p>
         </div>
 
-        <UsersCard currentEmail={userId} />
+        <SectionNav section={section} onChange={setSection} />
 
-        <AuditLogCard />
+        {section === "overview" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UsersSummary onView={() => setSection("users")} />
+            <SystemSummary onView={() => setSection("system")} health={health} healthError={healthError} />
+            <ModelsSummary onView={() => setSection("models")} />
+            <PipelineSummary onView={() => setSection("pipeline")} />
+            <DQSummary onView={() => setSection("dq")} />
+            <UsageSummaryTile onView={() => setSection("usage")} />
+            <ActivitySummary onView={() => setSection("activity")} />
+            <AppearanceSummary onView={() => setSection("appearance")} />
+          </div>
+        )}
 
-        <AppearanceCard />
+        {section === "users" && <UsersCard currentEmail={userId} />}
 
-        <Card title="System status">
-          {healthError && (
-            <p role="alert" className="text-sm text-gray-500">
-              {healthError}
-            </p>
-          )}
-          {!healthError && !health && <p className="text-sm text-gray-500">Checking system status…</p>}
-          {health && (
-            <>
-              <StatusRow label="Postgres" up={health.postgres} />
-              <StatusRow label="Neo4j" up={health.neo4j} />
-              <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
-              {health.detail?.fact_trade_rows !== undefined && (
-                <div className="pt-3 mt-1 text-xs text-gray-500">
-                  {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
-                </div>
+        {section === "activity" && <AuditLogCard />}
+
+        {section === "appearance" && <AppearanceCard />}
+
+        {section === "system" && (
+          <>
+            <Card title="System status">
+              {healthError && (
+                <p role="alert" className="text-sm text-gray-500">
+                  {healthError}
+                </p>
               )}
-              {health.detail?.reasoning && (
-                <div className="text-xs text-gray-500">{health.detail.reasoning}</div>
+              {!healthError && !health && <p className="text-sm text-gray-500">Checking system status…</p>}
+              {health && (
+                <>
+                  <StatusRow label="Postgres" up={health.postgres} />
+                  <StatusRow label="Neo4j" up={health.neo4j} />
+                  <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
+                  {health.detail?.fact_trade_rows !== undefined && (
+                    <div className="pt-3 mt-1 text-xs text-gray-500">
+                      {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
+                    </div>
+                  )}
+                  {health.detail?.reasoning && (
+                    <div className="text-xs text-gray-500">{health.detail.reasoning}</div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </Card>
+            </Card>
+            <LLMStatusCard />
+          </>
+        )}
 
-        <LLMStatusCard />
-        <ModelsCard />
-        <PipelineCard />
-        <DQFlagsCard />
+        {section === "models" && <ModelsCard />}
 
+        {section === "pipeline" && <PipelineCard />}
+
+        {section === "dq" && <DQFlagsCard />}
+
+        {section === "usage" && (
           <section aria-labelledby="admin-usage">
             <h2 id="admin-usage" className="text-sm font-semibold text-gray-900 mb-3">
               Model usage across all users
             </h2>
             <UsagePanel scope="all" />
           </section>
+        )}
       </div>
     </div>
   );
