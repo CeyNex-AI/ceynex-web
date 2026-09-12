@@ -44,4 +44,4 @@ the run and `moderate` ones are printed; keyboard operability of the trace, the
 clarification card and the citation focus is exercised by pressing keys; the
 reduced-motion project asserts the trace's pulse is not running. **None of this
 is a screen-reader pass.** Implementation is not verification, and a human with
-NVDA or VoiceOver is still owed.
+NVDA, VoiceOver or Orca is still owed; `e2e/SCREEN_READER.md` is the script for it.
