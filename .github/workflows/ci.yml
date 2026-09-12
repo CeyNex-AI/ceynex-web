@@ -1,0 +1,54 @@
+# ceynex-web CI: lint and the production build.
+#
+# No test suite exists yet (no vitest/jest, no *.test.* files) -- lint and a
+# real `vite build` are what's actually available to check on every PR, so
+# that's what runs. Add a `test` job here once a test framework lands.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Node 22 matches ceynex-infra/frontend/Dockerfile's build stage, not an
+      # arbitrary CI default -- a lint/build pass here should mean the deployed
+      # image builds too.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # `tsc -b && vite build` -- type errors fail the build the same way they
+      # would fail `ceynex-infra/frontend/Dockerfile`'s build stage.
+      - run: npm run build
