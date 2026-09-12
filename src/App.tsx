@@ -63,7 +63,7 @@ function NavBar() {
   );
 
   return (
-    <nav className="print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3 relative">
+    <nav className="cx-topnav print:hidden bg-white border-b border-gray-200 px-4 sm:px-6 py-3 relative">
       <div aria-hidden="true" className="cx-nav-hairline absolute top-0 left-0 right-0 h-[3px]" />
       <div className="flex items-center gap-1">
         <Link to={userId ? "/query" : "/"} className="flex items-center gap-2 mr-6">

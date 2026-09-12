@@ -260,7 +260,7 @@ export default function Account() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Account</h1>
+          <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Account</h1>
           <p className="text-sm text-gray-500">Your CeyNex session, sign-in details, preferences, how answers are written, usage and limits, and API keys.</p>
         </div>
 

@@ -171,7 +171,7 @@ export function SummaryTile({
   children: ReactNode;
 }) {
   return (
-    <div className="cx-panel-flat p-4 flex flex-col gap-2">
+    <div className="cx-panel-flat cx-tile-interactive p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         <button

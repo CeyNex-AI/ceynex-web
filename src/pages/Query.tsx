@@ -250,7 +250,7 @@ export default function Query() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Ask CeyNex</h1>
+        <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Ask CeyNex</h1>
         <p className="text-sm text-gray-500 mb-2">
           Ask about Sri Lanka's tea, cinnamon, and apparel export performance.
         </p>

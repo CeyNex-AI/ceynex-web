@@ -119,7 +119,9 @@ export default function ScenarioWorkbench() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Scenario workbench</h1>
+          <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">
+            Scenario workbench
+          </h1>
           <p className="text-sm text-gray-500 max-w-3xl">
             Move a shock and the assumptions behind it; the revenue effect re-runs in place over
             the same formulas and the same baseline the analysis uses. Nothing here is written

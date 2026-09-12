@@ -942,7 +942,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
         <div className="max-w-sm mx-auto">
-          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
+          <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Admin</h1>
           <div className="cx-panel-flat p-5">
             <p className="text-sm text-gray-600 leading-relaxed">
               This page is restricted to the Admin role. You're signed in as{" "}
@@ -967,7 +967,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-4">
         <div>
-          <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
+          <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Admin</h1>
           <p className="text-sm text-gray-500">
             Retrain, ingest and data-quality review: real actions against the live system.
           </p>
