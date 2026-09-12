@@ -137,7 +137,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 className="cx-input w-full px-3 py-2 text-sm"
-                placeholder="••••••••"
+                placeholder="Your password"
               />
             </div>
 
