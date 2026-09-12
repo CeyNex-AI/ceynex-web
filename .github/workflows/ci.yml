@@ -1,8 +1,4 @@
-# ceynex-web CI: lint and the production build.
-#
-# No test suite exists yet (no vitest/jest, no *.test.* files) -- lint and a
-# real `vite build` are what's actually available to check on every PR, so
-# that's what runs. Add a `test` job here once a test framework lands.
+# ceynex-web CI: lint, the vitest suite, and the production build.
 
 name: ci
 
@@ -36,6 +32,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm test
 
   build:
     runs-on: ubuntu-24.04
