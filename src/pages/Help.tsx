@@ -176,26 +176,28 @@ export default function Help() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Help &amp; FAQ</h1>
         <p className="text-sm text-gray-500 mb-4">
           A quick guide to how CeyNex answers questions.
         </p>
 
-        <SectionNav section={category} onChange={setCategory} items={NAV_ITEMS} ariaLabel="Help categories" />
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <SectionNav section={category} onChange={setCategory} items={NAV_ITEMS} ariaLabel="Help categories" />
 
-        {/* A question-and-answer list is exactly what <dl>/<dt>/<dd> are for --
-         * real semantics instead of <div>s styled to look like one, so a
-         * screen reader can navigate the FAQ by term rather than reading an
-         * undifferentiated stream of paragraphs. */}
-        <dl className="space-y-3 mt-4">
-          {shown.map(({ q, a }) => (
-            <div key={q} className="cx-panel-flat p-5">
-              <dt className="text-sm font-bold text-gray-900 mb-1.5">{q}</dt>
-              <dd className="text-sm text-gray-600 leading-relaxed">{a}</dd>
-            </div>
-          ))}
-        </dl>
+          {/* A question-and-answer list is exactly what <dl>/<dt>/<dd> are for --
+           * real semantics instead of <div>s styled to look like one, so a
+           * screen reader can navigate the FAQ by term rather than reading an
+           * undifferentiated stream of paragraphs. */}
+          <dl className="flex-1 min-w-0 space-y-3">
+            {shown.map(({ q, a }) => (
+              <div key={q} className="cx-panel-flat p-5">
+                <dt className="text-sm font-bold text-gray-900 mb-1.5">{q}</dt>
+                <dd className="text-sm text-gray-600 leading-relaxed">{a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </div>
     </div>
   );

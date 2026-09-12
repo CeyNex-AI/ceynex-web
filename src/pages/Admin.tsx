@@ -965,7 +965,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Admin</h1>
           <p className="text-sm text-gray-500">
@@ -973,70 +973,74 @@ export default function Admin() {
           </p>
         </div>
 
-        <SectionNav section={section} onChange={setSection} items={NAV_ITEMS} ariaLabel="Admin sections" />
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <SectionNav section={section} onChange={setSection} items={NAV_ITEMS} ariaLabel="Admin sections" />
 
-        {section === "overview" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <UsersSummary onView={() => setSection("users")} />
-            <SystemSummary onView={() => setSection("system")} health={health} healthError={healthError} />
-            <ModelsSummary onView={() => setSection("models")} />
-            <PipelineSummary onView={() => setSection("pipeline")} />
-            <DQSummary onView={() => setSection("dq")} />
-            <UsageSummaryTile onView={() => setSection("usage")} />
-            <ActivitySummary onView={() => setSection("activity")} />
-            <AppearanceSummary onView={() => setSection("appearance")} />
+          <div className="flex-1 min-w-0 space-y-4">
+            {section === "overview" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <UsersSummary onView={() => setSection("users")} />
+                <SystemSummary onView={() => setSection("system")} health={health} healthError={healthError} />
+                <ModelsSummary onView={() => setSection("models")} />
+                <PipelineSummary onView={() => setSection("pipeline")} />
+                <DQSummary onView={() => setSection("dq")} />
+                <UsageSummaryTile onView={() => setSection("usage")} />
+                <ActivitySummary onView={() => setSection("activity")} />
+                <AppearanceSummary onView={() => setSection("appearance")} />
+              </div>
+            )}
+
+            {section === "users" && <UsersCard currentEmail={userId} />}
+
+            {section === "activity" && <AuditLogCard />}
+
+            {section === "appearance" && <AppearanceCard />}
+
+            {section === "system" && (
+              <>
+                <Card title="System status">
+                  {healthError && (
+                    <p role="alert" className="text-sm text-gray-500">
+                      {healthError}
+                    </p>
+                  )}
+                  {!healthError && !health && <p className="text-sm text-gray-500">Checking system status…</p>}
+                  {health && (
+                    <>
+                      <StatusRow label="Postgres" up={health.postgres} />
+                      <StatusRow label="Neo4j" up={health.neo4j} />
+                      <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
+                      {health.detail?.fact_trade_rows !== undefined && (
+                        <div className="pt-3 mt-1 text-xs text-gray-500">
+                          {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
+                        </div>
+                      )}
+                      {health.detail?.reasoning && (
+                        <div className="text-xs text-gray-500">{health.detail.reasoning}</div>
+                      )}
+                    </>
+                  )}
+                </Card>
+                <LLMStatusCard />
+              </>
+            )}
+
+            {section === "models" && <ModelsCard />}
+
+            {section === "pipeline" && <PipelineCard />}
+
+            {section === "dq" && <DQFlagsCard />}
+
+            {section === "usage" && (
+              <section aria-labelledby="admin-usage">
+                <h2 id="admin-usage" className="text-sm font-semibold text-gray-900 mb-3">
+                  Model usage across all users
+                </h2>
+                <UsagePanel scope="all" />
+              </section>
+            )}
           </div>
-        )}
-
-        {section === "users" && <UsersCard currentEmail={userId} />}
-
-        {section === "activity" && <AuditLogCard />}
-
-        {section === "appearance" && <AppearanceCard />}
-
-        {section === "system" && (
-          <>
-            <Card title="System status">
-              {healthError && (
-                <p role="alert" className="text-sm text-gray-500">
-                  {healthError}
-                </p>
-              )}
-              {!healthError && !health && <p className="text-sm text-gray-500">Checking system status…</p>}
-              {health && (
-                <>
-                  <StatusRow label="Postgres" up={health.postgres} />
-                  <StatusRow label="Neo4j" up={health.neo4j} />
-                  <StatusRow label="LLM reasoning" up={health.llm} note={health.llm ? "up" : "degraded"} />
-                  {health.detail?.fact_trade_rows !== undefined && (
-                    <div className="pt-3 mt-1 text-xs text-gray-500">
-                      {health.detail.fact_trade_rows.toLocaleString()} fact_trade rows
-                    </div>
-                  )}
-                  {health.detail?.reasoning && (
-                    <div className="text-xs text-gray-500">{health.detail.reasoning}</div>
-                  )}
-                </>
-              )}
-            </Card>
-            <LLMStatusCard />
-          </>
-        )}
-
-        {section === "models" && <ModelsCard />}
-
-        {section === "pipeline" && <PipelineCard />}
-
-        {section === "dq" && <DQFlagsCard />}
-
-        {section === "usage" && (
-          <section aria-labelledby="admin-usage">
-            <h2 id="admin-usage" className="text-sm font-semibold text-gray-900 mb-3">
-              Model usage across all users
-            </h2>
-            <UsagePanel scope="all" />
-          </section>
-        )}
+        </div>
       </div>
     </div>
   );

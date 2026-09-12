@@ -108,11 +108,17 @@ export function Skeleton({ className = "" }: { className?: string }) {
 }
 
 /**
- * A row of buttons that switches which section of a long page is shown --
- * Admin's first use (Users/System/Models/…), Account's second. A toggle-group
- * (`aria-pressed`), the same pattern `QueryWorkspace`'s Chat/Single-question
- * switch already uses, rather than a full ARIA tabs widget this codebase has
- * no keyboard-arrow handling for yet.
+ * Switches which section of a long page is shown -- Admin's first use
+ * (Users/System/Models/…), then Account and Help. A left sidebar at `lg` and
+ * up, the same `w-full lg:w-<n> shrink-0` column `ConversationSidebar` already
+ * uses beside Chat's transcript; below `lg` it's a wrapped row of pills above
+ * the content instead, since a vertical list of nine items would out-scroll a
+ * phone screen before the content it's meant to get you to.
+ *
+ * `<nav>` + `aria-current="page"` rather than a toggle-group's `aria-pressed`
+ * -- this picks which piece of the page's content is showing, the same thing
+ * `ConversationSidebar` picking a conversation does, not a mode switch like
+ * `QueryWorkspace`'s Chat/Single-question toggle.
  */
 export function SectionNav<T extends string>({
   section,
@@ -126,28 +132,31 @@ export function SectionNav<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      className="flex flex-wrap items-center gap-1 text-sm border-b border-gray-200 pb-3"
-    >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onChange(item.id)}
-          aria-pressed={section === item.id}
-          className={`px-2.5 py-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2
-                      focus-visible:outline-teal-600 ${
-                        section === item.id
-                          ? "bg-teal-50 text-teal-700 font-medium"
-                          : "text-gray-500 hover:text-gray-900"
-                      }`}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
+    <nav aria-label={ariaLabel} className="w-full lg:w-44 shrink-0">
+      <div
+        className="flex flex-wrap lg:flex-col gap-1 lg:gap-0.5 text-sm
+                   pb-3 lg:pb-0 border-b lg:border-b-0 border-gray-200
+                   lg:border-r lg:pr-4"
+      >
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onChange(item.id)}
+            aria-current={section === item.id ? "page" : undefined}
+            className={`px-2.5 py-1 lg:py-1.5 rounded-md lg:w-full lg:text-left
+                        focus-visible:outline-2 focus-visible:outline-offset-2
+                        focus-visible:outline-teal-600 ${
+                          section === item.id
+                            ? "bg-teal-50 text-teal-700 font-medium"
+                            : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                        }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 }
 
