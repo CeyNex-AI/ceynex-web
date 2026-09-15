@@ -407,6 +407,7 @@ export function AssistantTurn({
                   articles={news ?? null}
                   loading={newsLoading ?? false}
                   source={newsSource}
+                  idPrefix={evidencePrefix}
                 />
               )}
             </div>

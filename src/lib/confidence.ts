@@ -30,3 +30,14 @@ export const CONFIDENCE_BAND_COLOR: Record<ConfidenceBand, string> = {
   Low: "var(--color-status-serious)",
   "Very low": "var(--color-status-critical)",
 };
+
+// The gauge's stroke uses the plain colour above -- decorative, not text, so
+// it doesn't need WCAG contrast. Its band-name label is real text at 10px and
+// needs the darker -text variant below (index.css) to clear 4.5:1 against
+// the page background; axe caught the plain colour failing on every band.
+export const CONFIDENCE_BAND_TEXT_COLOR: Record<ConfidenceBand, string> = {
+  High: "var(--color-status-good-text)",
+  Moderate: "var(--color-status-warning-text)",
+  Low: "var(--color-status-serious-text)",
+  "Very low": "var(--color-status-critical-text)",
+};

@@ -1,5 +1,10 @@
 import type { ConfidenceBand } from "../lib/confidence";
-import { CONFIDENCE_BAND_COLOR, CONFIDENCE_BAND_STYLES, confidenceBand } from "../lib/confidence";
+import {
+  CONFIDENCE_BAND_COLOR,
+  CONFIDENCE_BAND_STYLES,
+  CONFIDENCE_BAND_TEXT_COLOR,
+  confidenceBand,
+} from "../lib/confidence";
 import { useTheme } from "../lib/useTheme";
 
 const RADIUS = 20;
@@ -73,7 +78,10 @@ export default function ConfidenceBadge({
           {(score * 100).toFixed(0)}%
         </text>
       </svg>
-      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>
+      <span
+        className="text-[10px] font-bold uppercase tracking-wide"
+        style={{ color: CONFIDENCE_BAND_TEXT_COLOR[resolved] }}
+      >
         {resolved}
       </span>
     </div>

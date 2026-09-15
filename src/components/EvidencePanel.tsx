@@ -24,9 +24,14 @@ export default function EvidencePanel({
   /** The 1-based entry a citation just pointed at, shown with a ring. */
   highlight?: number | null;
 }) {
+  // Distinguishes this landmark from NewsPanel's own <aside> -- both render
+  // per chat message, so the id must vary with idPrefix or two panels on the
+  // same page collide (axe's landmark-unique caught the un-labelled case).
+  const headingId = idPrefix ? `${idPrefix}-evidence-heading` : "evidence-panel-heading";
+
   return (
-    <aside className="cx-panel w-full lg:w-80 shrink-0 p-4">
-      <h2 className="cx-panel-title mb-3">Evidence</h2>
+    <aside className="cx-panel w-full lg:w-80 shrink-0 p-4" aria-labelledby={headingId}>
+      <h2 id={headingId} className="cx-panel-title mb-3">Evidence</h2>
       {evidence.length === 0 ? (
         <p className="text-sm text-gray-500">No supporting evidence for this answer.</p>
       ) : (
