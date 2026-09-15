@@ -44,15 +44,21 @@ export default function NewsPanel({
   articles,
   loading,
   source,
+  idPrefix,
 }: {
   articles: NewsArticle[] | null;
   loading: boolean;
   source: NewsSource | null;
+  /** Same purpose as EvidencePanel's idPrefix: keeps the heading id unique
+   * when a panel renders once per chat message rather than once per page. */
+  idPrefix?: string;
 }) {
+  const headingId = idPrefix ? `${idPrefix}-news-heading` : "news-panel-heading";
+
   return (
-    <aside className="cx-panel print:hidden w-full lg:w-80 shrink-0 p-4">
+    <aside className="cx-panel print:hidden w-full lg:w-80 shrink-0 p-4" aria-labelledby={headingId}>
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h2 className="cx-panel-title">Related news</h2>
+        <h2 id={headingId} className="cx-panel-title">Related news</h2>
         {source === "cache" && (
           <span
             className="text-[10px] font-medium text-amber-600 bg-amber-50 rounded px-1.5 py-0.5"

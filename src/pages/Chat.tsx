@@ -384,13 +384,11 @@ export default function Chat() {
    */
   const [shareLinks, setShareLinks] = useState<Record<number, string>>({});
   const shareLink = activeId !== null ? shareLinks[activeId] : undefined;
+  const activeTitle = conversations.find((c) => c.id === activeId)?.title ?? null;
 
   /** Markdown of the whole conversation plus an evidence appendix (§7). */
   function exportMarkdown() {
-    const markdown = conversationToMarkdown(
-      conversations.find((c) => c.id === activeId)?.title ?? null,
-      messages,
-    );
+    const markdown = conversationToMarkdown(activeTitle, messages);
     const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown" }));
     const link = document.createElement("a");
     link.href = url;
@@ -584,6 +582,18 @@ export default function Chat() {
       )}
 
       <div className="flex-1 min-w-0 flex flex-col gap-4">
+        {/* Always present so the page has exactly one h1, even once the
+            empty-state heading below unmounts for a live conversation --
+            axe's page-has-heading-one caught its absence once a chat had
+            messages. Visible only in the empty state; sr-only otherwise so
+            the visual design is unchanged. */}
+        <h1
+          className={
+            messages.length === 0 && !live ? "text-lg font-semibold text-gray-900" : "sr-only"
+          }
+        >
+          {activeTitle ?? "Ask about Sri Lanka's export economy"}
+        </h1>
         {messages.length > 0 && activeId !== null && (
           <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
             <FreshnessRibbon />
@@ -604,9 +614,6 @@ export default function Chat() {
         )}
         {messages.length === 0 && !live && (
           <div className="space-y-3">
-            <h1 className="text-lg font-semibold text-gray-900">
-              Ask about Sri Lanka&apos;s export economy
-            </h1>
             <p className="text-sm text-gray-500">
               Every figure is traced to the query that produced it. Open the steps beside an
               answer to see the Cypher, the dataset read and what the model cost.

@@ -78,11 +78,24 @@ body {
   --color-red-800: #6f1a1a;
 
   /* Named aliases for the confidence gauge, which takes colour as an SVG
-   * attribute value rather than a className. */
+   * attribute value rather than a className. The arc is a decorative stroke,
+   * not text, so the plain -500 step is fine there. */
   --color-status-good: var(--color-emerald-500);
   --color-status-warning: var(--color-amber-500);
   --color-status-serious: #d9622f;
   --color-status-critical: var(--color-red-500);
+
+  /* The gauge's own band-name label (e.g. "HIGH") is real text at only 10px,
+   * and every -500/serious step above reads below WCAG AA's 4.5:1 against
+   * --color-gray-50 (#eff7f5) -- axe caught it: High 3.08:1, Moderate 2.54:1,
+   * Low 3.36:1, Very low 4.41:1, all failing. These text-only variants clear
+   * 4.5:1 the same way emerald-700/amber-700/red-700 already do for the
+   * Classic pill's text-*-700 classes; --color-status-serious has no existing
+   * darker step of its own so #a24923 (5.49:1) was picked to match. */
+  --color-status-good-text: var(--color-emerald-700);
+  --color-status-warning-text: var(--color-amber-700);
+  --color-status-serious-text: #a24923;
+  --color-status-critical-text: var(--color-red-700);
 }
 
 /* ---- nav -------------------------------------------------------------- */

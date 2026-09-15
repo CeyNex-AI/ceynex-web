@@ -173,7 +173,9 @@ export function SummaryTile({
   return (
     <div className="cx-panel-flat cx-tile-interactive p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        {/* h2, not h3: every SummaryTile sits directly under the page's own
+            h1 with nothing in between (axe's heading-order caught the skip). */}
+        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
         <button
           type="button"
           onClick={onView}
