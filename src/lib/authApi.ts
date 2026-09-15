@@ -6,6 +6,8 @@
  * accounts (ceynex/api/auth.py).
  */
 
+import { ApiError } from "./apiFetch";
+
 export interface LoginResult {
   token: string;
   email: string;
@@ -66,7 +68,11 @@ export async function fetchMe(token: string): Promise<MeResult> {
   });
 
   if (!res.ok) {
-    throw new Error(`Session check failed (${res.status}).`);
+    // ApiError, not a plain Error: auth.tsx needs the status to tell "the
+    // server said this token is invalid" (401) from "the request itself
+    // failed" (a 5xx or the fetch rejecting outright on a network error) --
+    // only the former means the session was actually revoked.
+    throw new ApiError(`Session check failed (${res.status}).`, res.status);
   }
 
   return res.json();

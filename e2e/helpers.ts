@@ -1,5 +1,58 @@
-import { expect, type Page } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+// Re-exported so specs that need the theme fixture's `test` also get a
+// matching `expect` from the same module, rather than mixing imports from
+// both "./helpers" and "@playwright/test" for what is really one API.
+export { expect };
+
+/**
+ * The site-wide theme a project's tests run under (playwright.config.ts sets
+ * this per-project, e.g. `use: { theme: "signal-deck" }`). Defaults to
+ * "classic" — the theme a fresh site starts on — so existing projects that
+ * never mention it are unaffected. `POST /api/site/theme` is a real,
+ * persisted, site-wide DB setting (ceynex-core's `site.py`), not a per-browser
+ * one, so this is an auto-fixture that sets it before a test and puts it back
+ * after, rather than something a spec calls itself — a signal-deck test that
+ * forgot to reset it would otherwise silently change every later test on a
+ * suite that runs single-worker against one shared backend.
+ */
+export const test = base.extend<{ theme: "classic" | "signal-deck" }>({
+  theme: ["classic", { option: true }],
+  // Named `provide`, not Playwright's own docs-conventional `use` -- eslint's
+  // react-hooks rule (applied to every .ts file in this project, e2e/
+  // included) mistakes a plain function parameter called `use` for React's
+  // `use()` API purely by name. Renaming is the narrow fix; the rule's file
+  // scoping is a separate, pre-existing, project-wide question not touched here.
+  page: async ({ page, theme, baseURL }, provide) => {
+    if (theme !== "signal-deck") {
+      await provide(page);
+      return;
+    }
+    await setSiteTheme(page, baseURL, "signal-deck");
+    try {
+      await provide(page);
+    } finally {
+      await setSiteTheme(page, baseURL, "classic");
+    }
+  },
+});
+
+async function setSiteTheme(
+  page: Page,
+  baseURL: string | undefined,
+  theme: "classic" | "signal-deck",
+): Promise<void> {
+  const token = process.env.E2E_TOKEN_ADMIN;
+  if (!token) throw new Error("No admin token for setSiteTheme: e2e/global-setup.ts did not run.");
+  const response = await page.request.post(`${baseURL}/api/site/theme`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { theme },
+  });
+  if (!response.ok()) {
+    throw new Error(`POST /api/site/theme -> ${theme} failed: ${response.status()} ${await response.text()}`);
+  }
+}
 
 /**
  * The accounts the specs sign in as. RBAC has no fixed demo accounts, so
