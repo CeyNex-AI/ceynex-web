@@ -4,14 +4,15 @@
  * the OS reduced-motion preference, where the trace's pulse must not animate.
  */
 
-import { expect, test } from "@playwright/test";
 import {
   ADMIN,
   answered,
   ask,
+  expect,
   expectNoSeriousA11yViolations,
   login,
   loginThroughTheForm,
+  test,
 } from "./helpers";
 
 test("login page", async ({ page }) => {

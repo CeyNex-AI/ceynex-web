@@ -12,7 +12,7 @@ import { defineConfig, devices } from "@playwright/test";
 const API = process.env.VITE_API_TARGET ?? "http://127.0.0.1:8079";
 const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
 
-export default defineConfig({
+export default defineConfig<{ theme: "classic" | "signal-deck" }>({
   testDir: "./e2e",
   // Creates the policymaker the specs sign in as and checks the seeded admin
   // exists, since RBAC has no fixed demo accounts (e2e/global-setup.ts).
@@ -39,6 +39,19 @@ export default defineConfig({
       name: "reduced-motion",
       testMatch: /a11y\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], contextOptions: { reducedMotion: "reduce" } },
+    },
+    {
+      // The same accessibility pass again, this time with the site-wide
+      // Signal Deck theme on (e2e/helpers.ts's `theme` fixture flips it on
+      // for this project's tests and back to classic after) -- added
+      // 2026-09-15 after a live axe-core scan against production found a
+      // real WCAG contrast failure that lived only in Signal Deck's
+      // confidence gauge. Without this project, `a11y.spec.ts` at 100% pass
+      // would still say nothing about that theme at all: the other two
+      // projects only ever render Classic, a fresh site's default.
+      name: "signal-deck",
+      testMatch: /a11y\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], theme: "signal-deck" },
     },
   ],
   // The production bundle, served by `vite preview` with the proxy from

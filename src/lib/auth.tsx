@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { changeEmailApi, deleteAccountApi } from "./accountApi";
-import { setSessionExpiredHandler } from "./apiFetch";
+import { ApiError, setSessionExpiredHandler } from "./apiFetch";
 import { AuthContext } from "./authContext";
 import { fetchMe, loginApi, signupApi } from "./authApi";
 import type { Role } from "./roles";
@@ -34,14 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(user.email);
         setRole(user.role as Role);
       })
-      .catch(() => {
-        // There WAS a token and the server refused it — expired, or cut by a
-        // password/role change or a disable. Tell the Login page so it can
-        // say so rather than looking like a first visit.
-        if (!cancelled) {
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 401) {
+          // The server itself said this token is invalid — expired, or cut
+          // by a password/role change or a disable. Tell the Login page so
+          // it can say so rather than looking like a first visit.
           clearToken();
           setSessionExpired(true);
         }
+        // Anything else (a 5xx, or fetch rejecting outright on a network
+        // error) means the check itself failed, not that the session was
+        // revoked — found live 2026-09-15 running e2e/a11y.spec.ts against a
+        // busy local backend: an occasional slow/failed GET /api/auth/me
+        // forced a real, valid session back to signed-out. Leave the stored
+        // token alone so the next real navigation gets to try again.
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
