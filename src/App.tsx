@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Logo from "./components/Logo";
 import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./lib/auth";
@@ -100,6 +100,40 @@ function NavBar() {
   );
 }
 
+// A client-side route change never fires the browser's own "new page"
+// signals -- no load event, no default focus reset -- so without this a
+// screen-reader user who just signed in (or followed any nav link) hears
+// nothing at all and their next Tab press leaves the app entirely for
+// browser chrome. `usePageTitle` alone doesn't fix it: NVDA only announces a
+// title change when the focused element also changes. Skips the very first
+// render so a fresh page load keeps its natural focus (usually the top of
+// the document), matching the same "did the reader just arrive here, or is
+// this a mid-session update" distinction ClarifyCard.tsx draws.
+function MainContent({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const main = useRef<HTMLElement | null>(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    main.current?.focus();
+  }, [location.pathname]);
+
+  return (
+    <main
+      id="main-content"
+      ref={main}
+      tabIndex={-1}
+      className="focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+    >
+      {children}
+    </main>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -114,7 +148,7 @@ function App() {
             Skip to main content
           </a>
           <NavBar />
-          <main id="main-content">
+          <MainContent>
             <Routes>
               <Route path="/" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -163,7 +197,7 @@ function App() {
               <Route path="/shared/:token" element={<SharedConversation />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </main>
+          </MainContent>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

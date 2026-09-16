@@ -101,10 +101,17 @@ function toRow(event: TraceEvent, index: number): Row | null {
 
   switch (event.kind) {
     case "thought":
+      // `event.step` has arrived empty from the backend before — found live
+      // 2026-09-16, NVDA read four consecutive rows as just "done:" with
+      // nothing after it, and a screenshot confirmed the same rows render
+      // with no text for sighted users too. A blank row tells the reader
+      // nothing happened, when a real step did; this fallback is the same
+      // category of fix as `_topic_of()` on the backend gives a genuine
+      // failure a readable label instead of silence.
       return {
         key,
         icon: "◆",
-        label: event.step ?? "",
+        label: event.step || "Planning step",
         meta: event.method === "deterministic" ? "planned from the route" : undefined,
         status: "ok",
       };
@@ -171,7 +178,7 @@ function toRow(event: TraceEvent, index: number): Row | null {
       return {
         key,
         icon: "✦",
-        label: `Language model (${event.role ?? "?"})`,
+        label: `Language model (${event.role || "role not reported"})`,
         detail: event.cache_hit
           ? "served from cache"
           : `${event.tokens_in ?? 0} in / ${event.tokens_out ?? 0} out`,
@@ -398,7 +405,18 @@ export default function ReasoningTrace({
             {running ? "Working…" : loading ? "Loading steps…" : summary}
           </span>
         </span>
-        <span className="text-xs text-gray-500">{open ? "Hide" : "Show"} steps</span>
+        {/*
+          The flex `gap` above only adds visual space — it inserts no actual
+          text between these two spans, so a screen reader reading the button
+          as flowing text ran them together with nothing between: "Thought
+          for 7.3sShow steps". Found live 2026-09-16. This separator is
+          sr-only so the visible layout (already spaced by the flex gap)
+          doesn't double up.
+        */}
+        <span className="text-xs text-gray-500">
+          <span className="sr-only">, </span>
+          {open ? "Hide" : "Show"} steps
+        </span>
       </button>
 
       {/*
