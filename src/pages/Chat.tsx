@@ -147,6 +147,21 @@ export default function Chat() {
    */
   const [announcement, setAnnouncement] = useState("");
   /**
+   * Setting the same string twice in a row is a no-op for the browser's own
+   * change detection on an `aria-live` region: React re-renders, but the DOM
+   * text content is unchanged, so nothing is re-announced. Found live
+   * 2026-09-16: "Answer ready." spoke correctly on a conversation's first
+   * turn, then silently stopped announcing on every follow-up in that same
+   * conversation, because the region was already holding "Answer ready."
+   * from the turn before. Clearing first, on its own tick, forces a real
+   * mutation each time so the second "Answer ready." (or a second identical
+   * withdrawal) is heard too.
+   */
+  const announce = useCallback((text: string) => {
+    setAnnouncement("");
+    window.setTimeout(() => setAnnouncement(text), 50);
+  }, []);
+  /**
    * The turn being streamed, accumulated outside React state so the `done`
    * handler can fold it into the transcript in one step. Kept in a ref rather
    * than read back from `live`, whose latest render the handler cannot see.
@@ -287,7 +302,7 @@ export default function Chat() {
           const reason = event.reason === "retry" ? null : (event.reason ?? "ungrounded");
           if (reason) {
             turn.withdrawn = reason;
-            setAnnouncement("A draft of the answer was withdrawn.");
+            announce("A draft of the answer was withdrawn.");
           }
           setLive((current) =>
             current
@@ -322,7 +337,7 @@ export default function Chat() {
         // question starts, and can be rated, saved and exported straight away.
         if (turn && frame.answer && !frame.failed && !frame.clarify) {
           setMessages((current) => [...current, ...foldTurn(turn, frame, current)]);
-          setAnnouncement("Answer ready.");
+          announce("Answer ready.");
           if (frame.request_id) {
             const requestId = frame.request_id;
             setTraces((current) => ({ ...current, [requestId]: turn.events }));
