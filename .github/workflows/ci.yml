@@ -66,3 +66,29 @@ jobs:
       # `tsc -b && vite build` -- type errors fail the build the same way they
       # would fail `ceynex-infra/frontend/Dockerfile`'s build stage.
       - run: npm run build
+
+  # Dependency-vulnerability and secrets scanning. eslint-plugin-security
+  # carries the TypeScript SAST inside the lint job above (--max-warnings 0);
+  # this job adds the two checks that are not lint rules. Kept in ci.yml rather
+  # than a separate workflow to match this repo's single-workflow layout.
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # Fails the job on a known advisory of high severity or worse. Moderate
+      # and below are reported but not gated, so a transitive low does not block
+      # a PR; raise the bar here if the team wants it stricter.
+      - run: npm audit --audit-level=high
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
