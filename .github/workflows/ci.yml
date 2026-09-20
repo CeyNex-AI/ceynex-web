@@ -74,6 +74,8 @@ jobs:
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    env:
+      GITLEAKS_VERSION: "8.21.2"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -88,7 +90,14 @@ jobs:
       # and below are reported but not gated, so a transitive low does not block
       # a PR; raise the bar here if the team wants it stricter.
       - run: npm audit --audit-level=high
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
-          GITLEAKS_ENABLE_SUMMARY: "true"
+      # gitleaks CLI directly, not gitleaks-action@v2: that action requires a
+      # paid GITLEAKS_LICENSE for a GitHub organization, while the binary is
+      # MIT-licensed and free. Pinned so a new release cannot turn a PR red.
+      - name: Install gitleaks
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+      - name: Scan git history for secrets
+        run: gitleaks detect --source . --redact --verbose
