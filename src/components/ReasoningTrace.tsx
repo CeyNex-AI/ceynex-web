@@ -70,6 +70,7 @@ const AGENT_LABEL: Record<string, string> = {
   forecast: "Forecast",
   route: "Routing",
   merge: "Merging findings",
+  graph: "Knowledge graph panel",
 };
 
 function agentName(node?: string | null): string {

@@ -43,10 +43,23 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
        * its own -- a screen reader gets nothing from it. aria-hidden pulls it
        * out of the accessibility tree entirely; the sr-only table below is
        * the real, complete text equivalent (every period/lower/upper, not
-       * just a compressed summary), so nothing is actually lost. */}
+       * just a compressed summary), so nothing is actually lost.
+       *
+       * `accessibilityLayer={false}`: Recharts 3's own keyboard-nav overlay
+       * (on by default) renders the root SVG with `role="application"` and
+       * `tabIndex={0}` regardless of an aria-hidden ancestor -- a focusable
+       * element inside an aria-hidden subtree, which NVDA's browse-mode
+       * cursor still walked into and then went silent on (found live via
+       * NVDA 2026-09-16, ceynex-web#29). Off, since the sr-only table is
+       * already the chart's real accessible interface and this overlay
+       * would only duplicate it, badly. */}
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={240}>
-          <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 8, right: 12, bottom: 0, left: 0 }}
+            accessibilityLayer={false}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200)" />
             <XAxis
               dataKey="period"
