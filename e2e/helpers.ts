@@ -84,7 +84,13 @@ export async function login(page: Page, who = DEMO): Promise<void> {
   await page.goto("/query");
   // The nav shows its links only to a signed-in reader, so this fails fast if
   // the token was refused rather than when a spec later misses the composer.
-  await expect(page.getByRole("link", { name: "Account" })).toBeVisible();
+  // Below `md` the links live behind a collapsed hamburger (App.tsx's
+  // `{menuOpen && ...}` doesn't render them into the DOM at all until it's
+  // opened), so the "mobile" project needs the toggle button as the same
+  // proof of a signed-in nav, not a second click just to see the link.
+  const accountLink = page.getByRole("link", { name: "Account" });
+  const menuToggle = page.getByRole("button", { name: /Menu|Close/ });
+  await expect(accountLink.or(menuToggle)).toBeVisible();
   await expect(page).toHaveURL(/\/query$/);
 }
 
@@ -102,12 +108,45 @@ export async function ask(page: Page, question: string): Promise<void> {
   const input = page.getByLabel("Your question");
   await expect(input).toBeEnabled();
   await input.fill(question);
-  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  // Submitted via the input's own Enter key, not a click on the "Ask"
+  // button. On the "mobile" project, filling a long-scrolled page's input
+  // triggers the emulated browser's own "scroll the focused field into
+  // view" behaviour, which keeps animating for a while after `fill()`
+  // resolves (confirmed live 2026-09-27: the button's measured position
+  // moved by ~380px between one check and the next, ~300ms apart). A
+  // coordinate-based click computed against any single snapshot of that
+  // window is racing a still-settling scroll and can land on whatever the
+  // evidence list -- genuinely elsewhere on the page -- happened to occupy
+  // at that coordinate a moment earlier. The input stays focused and
+  // interactable throughout since nothing about that scroll defocuses it,
+  // so Enter reaches the real target with no coordinate involved. The form
+  // treats the two identically (`onSubmit`), and the "Ask" button itself is
+  // still coordinate-clicked by every other project's run of this suite.
+  await input.press("Enter");
 }
 
 /** Wait for the live turn to finish: the composer is enabled again. */
 export async function answered(page: Page): Promise<void> {
   await expect(page.getByLabel("Your question")).toBeEnabled({ timeout: 90_000 });
+  // Chat.tsx smooth-scrolls to the composer whenever `live.done` flips true,
+  // which this line just waited for. A click issued immediately races that
+  // animation: on the "mobile" project (a taller conversation, a longer
+  // scroll), a coordinate-based click a moment later can land on whatever
+  // the evidence list -- genuinely elsewhere on the page -- occupied at that
+  // point before the scroll settled. Confirmed live 2026-09-27 against the
+  // "Share" button, which sits above the fold this scroll moves away from.
+  // A 100ms-apart pair, not two rAF ticks: the effect that starts the scroll
+  // runs on React's own schedule, a task tick that can trail slightly behind
+  // the DOM mutation `toBeEnabled()` above just observed, so a same-frame
+  // check risks reading "stable" from a scroll that has not started yet.
+  // `waitForFunction` retries this until it holds, which is what makes it
+  // correct regardless of how long the animation actually runs.
+  await page.waitForFunction(() => {
+    return new Promise<boolean>((resolve) => {
+      const before = window.scrollY;
+      setTimeout(() => resolve(window.scrollY === before), 100);
+    });
+  });
 }
 
 /**

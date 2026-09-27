@@ -53,6 +53,19 @@ export default defineConfig<{ theme: "classic" | "signal-deck" }>({
       testMatch: /a11y\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], theme: "signal-deck" },
     },
+    {
+      // The same accessibility pass at a phone viewport and touch-input
+      // profile -- the other three projects only ever render desktop width,
+      // so a mobile-only layout failure (a control clipped or overlapping
+      // outside the viewport, a touch target too small to hit) would pass
+      // every existing project and still be unusable on the device SRS 3.9.3
+      // names as a supported client. Chromium, like every other project here
+      // (an iPhone preset would pull in WebKit, a second browser engine this
+      // suite otherwise never needs and CI doesn't install).
+      name: "mobile",
+      testMatch: /a11y\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   // The production bundle, served by `vite preview` with the proxy from
   // vite.config.ts. Not the dev server: its on-demand dependency optimisation

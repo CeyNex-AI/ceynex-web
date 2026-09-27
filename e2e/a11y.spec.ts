@@ -22,6 +22,20 @@ test("login page", async ({ page }) => {
   await loginThroughTheForm(page);
 });
 
+test("signup page, including its own error state", async ({ page }) => {
+  await page.goto("/signup");
+  await expectNoSeriousA11yViolations(page, "signup");
+
+  // The one state the login-page spec's form pass never reaches: a submitted
+  // form with a role="alert" error on screen.
+  await page.getByLabel("Email").fill(`a11y-signup-${Date.now()}@ceynex.dev`);
+  await page.getByLabel("Password", { exact: true }).fill("password1");
+  await page.getByLabel("Confirm password").fill("password2");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("alert")).toHaveText(/don't match/);
+  await expectNoSeriousA11yViolations(page, "signup error");
+});
+
 test("chat: empty, streaming, answered, and a follow-up", async ({ page }) => {
   await login(page);
   await expectNoSeriousA11yViolations(page, "chat empty");
