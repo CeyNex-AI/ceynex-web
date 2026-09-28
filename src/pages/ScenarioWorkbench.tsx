@@ -7,11 +7,11 @@
  * (`ceynex/models/shocks.py`) and the same baseline read. Nothing on it is
  * written by a model.
  *
- * **Every parameter is shown with where it came from.** Several sources in the
- * backend's `config/elasticities.yaml` are still `TBD` placeholders. They are
- * printed as such: a slider over a number nobody has sourced must not look like
- * a fitted estimate, and hiding the column would be the quiet way to make it
- * look like one.
+ * **Every parameter is shown with where it came from.** None of the values in
+ * the backend's `config/elasticities.yaml` is a fitted estimate, and some are
+ * labelled `assumption`. They are printed as such: a slider over a judgment call
+ * must not look like a fitted estimate, and hiding the column would be the quiet
+ * way to make it look like one.
  *
  * Accessibility: every control is a labelled native input (range paired with a
  * number field so a value can be typed as well as dragged), the result region
@@ -447,8 +447,8 @@ function ParametersTable({ parameters }: { parameters: ScenarioParameter[] }) {
       </h2>
       <p className="text-xs text-gray-500 mb-3">
         These are the values the analysis itself uses (<code>config/elasticities.yaml</code>). A
-        source marked <strong>TBD</strong> is a literature placeholder that nobody has yet verified
-        against a published estimate — shown as such rather than tidied away.
+        basis of <strong>assumption</strong> is a judgment inside the range its source states, not a
+        fitted estimate — shown as such rather than tidied away.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

@@ -129,7 +129,7 @@ const FAQS: { q: string; a: string; category: (typeof CATEGORIES)[number]["id"] 
   },
   {
     q: "What's the scenario workbench?",
-    a: "A page for testing a rupee depreciation, a new tariff, or the loss of a trade preference against sliders instead of a typed question, using the same formulas and baseline data as an answer built from asking about one directly. Every parameter shows where it came from, including the ones still marked as unsourced placeholders, rather than dressing up a guess as a fitted number.",
+    a: "A page for testing a rupee depreciation, a new tariff, or the loss of a trade preference against sliders instead of a typed question, using the same formulas and baseline data as an answer built from asking about one directly. Every parameter shows where it came from and what kind of number it is (a published tariff schedule, a literature estimate, CeyNex's own trade data, or a labelled assumption) rather than dressing up a judgment call as a fitted number.",
     category: "tools",
   },
   {
