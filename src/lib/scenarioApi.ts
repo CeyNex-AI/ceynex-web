@@ -30,9 +30,9 @@ export interface ScenarioParameter {
   name: ParameterName;
   value: number;
   default: number;
-  /** literature_range | assumption | override | fallback | sourced */
+  /** own_data | literature | tariff_schedule | assumption | override | fallback | sourced */
   basis: string;
-  /** Verbatim from config/elasticities.yaml — several are still "TBD". */
+  /** Verbatim from config/elasticities.yaml (ceynex-core docs/ELASTICITY_SOURCES.md). */
   source: string;
   overridden: boolean;
 }

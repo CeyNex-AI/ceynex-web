@@ -1,6 +1,7 @@
 /**
  * The scenario workbench (backend D17): sliders re-run the shock in place, and
- * the parameters table says where every number came from — TBD included.
+ * the parameters table says where every number came from, and what kind of
+ * number it is — a labelled assumption included.
  */
 
 import { expect, test } from "@playwright/test";
@@ -22,10 +23,12 @@ test("moving a slider recomputes, and the sources are shown as they are", async 
     .poll(async () => page.getByText(/Revenue change/).locator("..").locator("dd").textContent())
     .not.toBe(before);
 
-  // The provenance table, with the placeholders printed rather than hidden.
+  // The provenance table: the demand elasticity is a judgment call, and says so
+  // rather than passing for a fitted estimate. Every source is a real one now.
   const table = page.getByRole("table");
   await expect(table.getByRole("rowheader", { name: "FX pass-through" })).toBeVisible();
-  await expect(table.getByText(/TBD/).first()).toBeVisible();
+  await expect(table.getByText("assumption", { exact: true }).first()).toBeVisible();
+  await expect(table.getByText(/TBD/)).toHaveCount(0);
 
   // Overriding a parameter marks it, and Reset takes it back.
   await page.getByLabel("FX pass-through, exact value").fill("1");
