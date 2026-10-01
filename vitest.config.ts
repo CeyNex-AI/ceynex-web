@@ -21,6 +21,18 @@ export default defineConfig((env: ConfigEnv) =>
       // default pattern too, and fail on import outside Playwright's runner.
       // scripts/ holds the build-time plugins.
       include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
+      // `npm run coverage`. The floor is a ratchet, as in ceynex-core: set just
+      // under what the suite measured when it was introduced (2026-10-01), so a
+      // PR that lowers coverage fails, and raised whenever coverage rises.
+      coverage: {
+        provider: "v8",
+        include: ["src/**/*.{ts,tsx}"],
+        exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/main.tsx", "src/vite-env.d.ts"],
+        reporter: ["text-summary", "json-summary"],
+        // Measured 2026-10-01: statements 22.2, branches 17.8, functions 15.8,
+        // lines 21.7. Most pages are covered by the Playwright suite instead.
+        thresholds: { statements: 21, branches: 17, functions: 15, lines: 21 },
+      },
     },
   }),
 );

@@ -43,3 +43,6 @@ ceynex_m3_context.md
 # Playwright output
 e2e/results
 e2e/report
+
+# Lighthouse CI reports (npx @lhci/cli autorun; uploaded as a CI artifact)
+.lighthouseci/
