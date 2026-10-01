@@ -2,10 +2,13 @@
  * GET /api/news/search and /api/news/trending, proxied same-origin the same way
  * as queryApi.ts.
  *
- * No auth header, deliberately. Both endpoints are open -- exactly like
- * POST /api/query, which answers anonymous callers (docs/DEFERRED.md) -- so
- * historyApi's authHeaders(), which throws when signed out, must not be reused
- * here or the news panel would break for the one case the endpoint supports.
+ * Both endpoints require sign-in (SRS FR-ACC-01), like POST /api/query. The
+ * token goes through `apiFetch`, so a session ended elsewhere takes the usual
+ * signed-out path instead of leaving the panel quietly "unavailable".
+ * `optionalAuthHeaders()` rather than `authHeaders()`: the latter throws before
+ * the request is made when there is no token, and the server's 401 is the one
+ * place that decision should live. Every page that shows news is behind
+ * RequireAuth anyway.
  *
  * These types live here rather than in types/contracts.ts. That file mirrors the
  * *frozen* Python contracts, and news is not one of them; putting NewsArticle
@@ -16,6 +19,8 @@
  * -- it sits beside the answer, labelled, and never inside it. Keeping the
  * SourceId union closed is the frontend half of that guarantee.
  */
+
+import { apiFetch, optionalAuthHeaders } from "./apiFetch";
 
 /** "gdelt" = live, "cache" = previously indexed headlines, "unavailable" = neither. */
 export type NewsSource = "gdelt" | "cache" | "unavailable";
@@ -76,7 +81,10 @@ export async function fetchNewsSearch(
   const params = new URLSearchParams({ q: query });
   if (options?.limit) params.set("limit", String(options.limit));
 
-  const res = await fetch(`/api/news/search?${params}`, { signal: options?.signal });
+  const res = await apiFetch(`/api/news/search?${params}`, {
+    headers: optionalAuthHeaders(),
+    signal: options?.signal,
+  });
   if (!res.ok) {
     throw new Error(`News search failed (${res.status}).`);
   }
@@ -84,7 +92,10 @@ export async function fetchNewsSearch(
 }
 
 export async function fetchTrending(options?: { signal?: AbortSignal }): Promise<TrendingResult> {
-  const res = await fetch("/api/news/trending", { signal: options?.signal });
+  const res = await apiFetch("/api/news/trending", {
+    headers: optionalAuthHeaders(),
+    signal: options?.signal,
+  });
   if (!res.ok) {
     throw new Error(`Couldn't load trending topics (${res.status}).`);
   }
