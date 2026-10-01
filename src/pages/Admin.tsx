@@ -13,6 +13,7 @@ import {
   fetchDQFlags,
   fetchLLMStatus,
   fetchModels,
+  fetchPipelineFreshness,
   fetchPipelineStatus,
   fetchUsers,
   generatePassword,
@@ -29,6 +30,7 @@ import { type Theme } from "../lib/siteApi";
 import { useTheme } from "../lib/useTheme";
 import timeAgo from "../lib/timeAgo";
 import { useAuth } from "../lib/useAuth";
+import FreshnessCard from "../components/FreshnessCard";
 import UsagePanel from "../components/UsagePanel";
 import { SectionNav, SummaryTile } from "../components/ui";
 import usePageTitle from "../lib/usePageTitle";
@@ -846,10 +848,14 @@ function ModelsSummary({ onView }: { onView: () => void }) {
 
 function PipelineSummary({ onView }: { onView: () => void }) {
   const [runs, setRuns] = useState<PipelineRunItem[] | null>(null);
+  const [stale, setStale] = useState<number | null>(null);
   useEffect(() => {
     fetchPipelineStatus()
       .then(setRuns)
       .catch(() => setRuns([]));
+    fetchPipelineFreshness()
+      .then((freshness) => setStale(freshness.stale))
+      .catch(() => setStale(null));
   }, []);
   if (!runs) return <SummaryTile title="Pipeline" onView={onView}>Loading…</SummaryTile>;
   if (runs.length === 0) return <SummaryTile title="Pipeline" onView={onView}>No ingest runs yet.</SummaryTile>;
@@ -857,6 +863,7 @@ function PipelineSummary({ onView }: { onView: () => void }) {
   return (
     <SummaryTile title="Pipeline" onView={onView}>
       Last: {last.source_id} · {last.status} · {timeAgo(last.started_at)}
+      {stale !== null && stale > 0 && ` · ${stale} stale`}
     </SummaryTile>
   );
 }
@@ -1027,7 +1034,12 @@ export default function Admin() {
 
             {section === "models" && <ModelsCard />}
 
-            {section === "pipeline" && <PipelineCard />}
+            {section === "pipeline" && (
+              <div className="space-y-4">
+                <FreshnessCard />
+                <PipelineCard />
+              </div>
+            )}
 
             {section === "dq" && <DQFlagsCard />}
 
