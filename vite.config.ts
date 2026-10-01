@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { thirdPartyNotices } from './scripts/thirdPartyNotices.ts'
 
 export default defineConfig(({ mode }) => {
   // Dev-only: mirrors nginx.conf.template's same-origin /api/ and /health
@@ -14,7 +15,8 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_API_TARGET || 'http://127.0.0.1:8000'
   const proxy = { '/api': target, '/health': target }
   return {
-    plugins: [react(), tailwindcss()],
+    // thirdPartyNotices: dist/third-party-licenses.txt, linked from /notices.
+    plugins: [react(), tailwindcss(), thirdPartyNotices()],
     server: { proxy },
     // `vite preview` serves the production bundle with the same proxy, which
     // is what the Playwright suite drives: the dev server's on-demand
