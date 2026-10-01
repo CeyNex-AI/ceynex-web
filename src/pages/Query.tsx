@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import AnswerDisclaimer from "../components/AnswerDisclaimer";
 import ConfidenceBadge from "../components/ConfidenceBadge";
 import EvidencePanel from "../components/EvidencePanel";
 import ForecastChart from "../components/ForecastChart";
@@ -248,7 +249,7 @@ export default function Query() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="flex-1 bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Ask CeyNex</h1>
         <p className="text-sm text-gray-500 mb-2">
@@ -361,6 +362,7 @@ export default function Query() {
                     Showing figures and evidence only. A natural-language explanation isn't available.
                   </p>
                 )}
+                <AnswerDisclaimer className="mt-3" />
               </div>
 
               {/* Full width under the answer rather than in the evidence

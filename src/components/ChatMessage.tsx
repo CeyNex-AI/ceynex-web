@@ -17,6 +17,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { evidenceId } from "../lib/evidenceAnchor";
 import { saveQuery, unsaveQuery } from "../lib/historyApi";
+import AnswerDisclaimer from "./AnswerDisclaimer";
 import AnswerFeedback from "./AnswerFeedback";
 import CitedAnswer from "./CitedAnswer";
 import ConfidenceBadge from "./ConfidenceBadge";
@@ -365,6 +366,7 @@ export function AssistantTurn({
             {onFollowUp && !answer.degraded && (
               <FollowUpChips answer={answer} onPick={onFollowUp} />
             )}
+            <AnswerDisclaimer />
             {usage && <UsageFooter usage={usage} />}
             <div className="flex flex-wrap items-center gap-3">
               {versions && versions.count > 1 && <VersionSwitcher {...versions} />}

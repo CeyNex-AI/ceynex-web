@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import AnswerDisclaimer from "../components/AnswerDisclaimer";
 import EvidencePanel from "../components/EvidencePanel";
 import { Button, Card, ErrorBanner, Pill } from "../components/ui";
 import {
@@ -116,7 +117,7 @@ export default function ScenarioWorkbench() {
   const shock = SHOCKS.find((s) => s.value === state.shock)!;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="flex-1 bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header>
           <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">
@@ -424,6 +425,7 @@ function Results({ result }: { result: ScenarioResponse }) {
         ))}
       </dl>
       <p className="text-xs text-gray-500 mt-3">{outcome.detail}</p>
+      <AnswerDisclaimer kind="scenario" className="mt-2" />
       {result.baseline_cypher && (
         <details className="mt-3">
           <summary className="text-xs text-teal-700 cursor-pointer">
