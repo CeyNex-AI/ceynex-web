@@ -64,7 +64,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex-1 flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-4xl grid lg:grid-cols-2 gap-12 items-center">
         <div className="hidden lg:block">
           <h1 className="mb-4">

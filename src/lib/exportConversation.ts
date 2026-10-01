@@ -4,9 +4,13 @@
  * Built entirely from data already loaded — no endpoint, no round trip. The
  * appendix is the point: a transcript without its sources is a chat log, and the
  * whole claim of this project is that every figure traces to one.
+ *
+ * It ends with the site disclaimer (SRS LG-01): an exported file travels
+ * without the footer that says the same thing in the app.
  */
 
 import type { ChatMessage } from "../types/chat";
+import { COPYRIGHT_NOTICE, SITE_DISCLAIMER } from "./legal";
 import { latestOnly } from "./versions";
 
 /**
@@ -53,5 +57,6 @@ export function conversationToMarkdown(title: string | null, messages: ChatMessa
     }
   }
 
+  lines.push("---", "", `*${SITE_DISCLAIMER}*`, "", `*${COPYRIGHT_NOTICE}*`, "");
   return lines.join("\n");
 }

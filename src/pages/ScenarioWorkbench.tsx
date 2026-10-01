@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import AnswerDisclaimer from "../components/AnswerDisclaimer";
 import EvidencePanel from "../components/EvidencePanel";
 import { Button, Card, ErrorBanner, Pill } from "../components/ui";
 import {
@@ -116,7 +117,7 @@ export default function ScenarioWorkbench() {
   const shock = SHOCKS.find((s) => s.value === state.shock)!;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="flex-1 bg-gray-50 p-6 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header>
           <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">
@@ -424,6 +425,7 @@ function Results({ result }: { result: ScenarioResponse }) {
         ))}
       </dl>
       <p className="text-xs text-gray-500 mt-3">{outcome.detail}</p>
+      <AnswerDisclaimer kind="scenario" className="mt-2" />
       {result.baseline_cypher && (
         <details className="mt-3">
           <summary className="text-xs text-teal-700 cursor-pointer">
@@ -450,7 +452,15 @@ function ParametersTable({ parameters }: { parameters: ScenarioParameter[] }) {
         basis of <strong>assumption</strong> is a judgment inside the range its source states, not a
         fitted estimate — shown as such rather than tidied away.
       </p>
-      <div className="overflow-x-auto">
+      {/* Focusable because it can scroll: at phone width the sourced citations
+          make the table wider than the screen, and a scroll area a keyboard
+          cannot reach fails axe's scrollable-region-focusable (serious). */}
+      <div
+        className="overflow-x-auto rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+        tabIndex={0}
+        role="group"
+        aria-label="Parameters table"
+      >
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 border-b border-gray-200">

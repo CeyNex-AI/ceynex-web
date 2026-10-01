@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Logo from "./components/Logo";
 import RequireAuth from "./components/RequireAuth";
+import SiteFooter from "./components/SiteFooter";
 import { AuthProvider } from "./lib/auth";
 import { ROLE_LABELS } from "./lib/roles";
 import { ThemeProvider } from "./lib/theme";
@@ -11,6 +12,7 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Notices from "./pages/Notices";
 import QueryWorkspace from "./pages/QueryWorkspace";
 import ScenarioWorkbench from "./pages/ScenarioWorkbench";
 import SharedConversation from "./pages/SharedConversation";
@@ -127,7 +129,7 @@ function MainContent({ children }: { children: ReactNode }) {
       id="main-content"
       ref={main}
       tabIndex={-1}
-      className="focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+      className="flex-1 flex flex-col focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
     >
       {children}
     </main>
@@ -139,65 +141,75 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          {/* Keyboard-only users can jump straight past the nav; visually
-           * hidden until focused, matching the standard skip-link pattern. */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
-          >
-            Skip to main content
-          </a>
-          <NavBar />
-          <MainContent>
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route
-                path="/query"
-                element={
-                  <RequireAuth>
-                    <QueryWorkspace />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/scenario"
-                element={
-                  <RequireAuth>
-                    <ScenarioWorkbench />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/help"
-                element={
-                  <RequireAuth>
-                    <Help />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/account"
-                element={
-                  <RequireAuth>
-                    <Account />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <RequireAuth>
-                    <Admin />
-                  </RequireAuth>
-                }
-              />
-              {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
-                  Read-only, no composer, and it carries no identity. */}
-              <Route path="/shared/:token" element={<SharedConversation />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </MainContent>
+          {/* A column at least one viewport tall, with <main> taking the
+           * slack, so the footer sits at the bottom of a short page rather
+           * than mid-screen, and below the content of a long one. Pages fill
+           * <main> with `flex-1` instead of their own `min-h-screen`, which
+           * would push the footer a whole viewport down. */}
+          <div className="min-h-dvh flex flex-col">
+            {/* Keyboard-only users can jump straight past the nav; visually
+             * hidden until focused, matching the standard skip-link pattern. */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-teal-700 focus:text-sm focus:font-medium focus:rounded-md focus:px-3 focus:py-2 focus:ring-2 focus:ring-teal-500"
+            >
+              Skip to main content
+            </a>
+            <NavBar />
+            <MainContent>
+              <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route
+                  path="/query"
+                  element={
+                    <RequireAuth>
+                      <QueryWorkspace />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/scenario"
+                  element={
+                    <RequireAuth>
+                      <ScenarioWorkbench />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/help"
+                  element={
+                    <RequireAuth>
+                      <Help />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/account"
+                  element={
+                    <RequireAuth>
+                      <Account />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireAuth>
+                      <Admin />
+                    </RequireAuth>
+                  }
+                />
+                {/* Outside RequireAuth on purpose — see SharedConversation.tsx.
+                    Read-only, no composer, and it carries no identity. */}
+                <Route path="/shared/:token" element={<SharedConversation />} />
+                {/* Public too: the footer links here from the sign-in pages. */}
+                <Route path="/notices" element={<Notices />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </MainContent>
+            <SiteFooter />
+          </div>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

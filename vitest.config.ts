@@ -19,7 +19,8 @@ export default defineConfig((env: ConfigEnv) =>
       css: false,
       // The unit tests only. The Playwright specs under e2e/ match Vitest's
       // default pattern too, and fail on import outside Playwright's runner.
-      include: ["src/**/*.test.{ts,tsx}"],
+      // scripts/ holds the build-time plugins.
+      include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     },
   }),
 );

@@ -298,7 +298,7 @@ export default function Account() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="flex-1 bg-gray-50 p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Account</h1>
@@ -323,7 +323,8 @@ export default function Account() {
                 </SummaryTile>
                 <SummaryTile title="Notifications" onView={() => setSection("notifications")}>
                   {prefs
-                    ? `${Object.values(prefs).filter(Boolean).length} of ${Object.keys(PREFERENCE_LABELS).length} enabled`
+                    ? // "enabled" read as though something were being sent; nothing is yet.
+                      `${Object.values(prefs).filter(Boolean).length} of ${Object.keys(PREFERENCE_LABELS).length} saved, nothing is sent yet`
                     : "Loading…"}
                 </SummaryTile>
                 <InstructionsSummary onView={() => setSection("instructions")} />

@@ -49,7 +49,7 @@ export default function SharedConversation() {
   if (!data) return <Skeleton />;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-4">
       <header className="space-y-1">
         <h1 className="text-lg font-semibold text-gray-900">
           {data.title || "CeyNex conversation"}
