@@ -5,9 +5,7 @@
  * different failure modes, and folding it in here would hide that.
  *
  * Every call is authenticated: a conversation is addressed by a serial id, so
- * the backend requires a signed-in owner on all of these. `/api/query` and an
- * anonymous `/api/chat/stream` remain open, which is why `apiJson` keeps both
- * an `auth` and an `optionalAuth` mode.
+ * the backend requires a signed-in owner on all of these.
  */
 
 import { apiJson } from "./apiFetch";

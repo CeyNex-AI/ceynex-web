@@ -70,9 +70,11 @@ export function authHeaders(): HeadersInit {
 /**
  * The token when there is one, nothing when there is not.
  *
- * For the endpoints that answer anonymous callers too — `/api/query` and
- * `/api/chat/stream` without a conversation. Signing in unlocks history and
- * conversations; it is not a gate on asking a question.
+ * For calls where the server, not this module, decides what a missing token
+ * means. `/api/query`, `/api/chat/stream` and `/api/news/*` refuse it with a
+ * 401 (SRS FR-ACC-01); `/api/graph/expand` answers it, because a shared
+ * conversation's reader has no account. Unlike `authHeaders()`, nothing throws
+ * here before the request is made.
  */
 export function optionalAuthHeaders(): HeadersInit {
   const token = getToken();

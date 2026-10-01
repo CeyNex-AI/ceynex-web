@@ -6,12 +6,11 @@
  * Main Query page, and the 30-question evaluation targets that shape, so it has
  * to stay demonstrably present rather than be quietly replaced.
  *
- * **Always behind `RequireAuth`.** The backend will answer `/api/chat/stream`
- * anonymously for a stateless turn — a documented deferred-scope decision that
- * keeps the endpoint demonstrable — but SRS 3.1.11 requires "account based
- * authentication for all users prior to query submission", so the page does not
- * offer that path. The `userId` guards below are therefore belt to that braces,
- * not a second entry point.
+ * **Always behind `RequireAuth`.** SRS 3.1.11 requires "account based
+ * authentication for all users prior to query submission", and the backend
+ * now enforces it on `/api/chat/stream` too, stateless turns included. The
+ * `userId` guards below are therefore belt to that braces, not a second entry
+ * point.
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";

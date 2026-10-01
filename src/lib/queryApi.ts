@@ -16,10 +16,10 @@ import { apiFetch } from "./apiFetch";
  * that already consumes it (Query.tsx, EvidencePanel, ForecastChart) stay
  * unchanged.
  *
- * The token, when present, is sent along so the backend can attribute the
- * query to a user for history (SRS 3.5.2) -- the endpoint itself stays open
- * either way (ceynex/api/routes/query.py's `get_optional_user`), so a missing
- * or stale token never breaks the query, it just isn't remembered.
+ * The endpoint requires sign-in (SRS FR-ACC-01, ceynex/api/routes/query.py's
+ * `require_user`), and the token also attributes the query to the user for
+ * history (SRS 3.5.2). A stale token comes back 401 through `apiFetch`, which
+ * takes the signed-out path.
  */
 interface ApiQueryResponse {
   answer: string;
