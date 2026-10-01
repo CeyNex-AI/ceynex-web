@@ -49,7 +49,34 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - run: npm test
+      # The vitest suite with coverage; fails below the floor in vitest.config.ts.
+      - run: npm run coverage
+
+  # Lighthouse on the public pages (SRS UR-05..UR-08): accessibility must score
+  # 90 or more; performance and best practices are reported, not gated, because
+  # no API answers behind `vite preview` here. Through npx rather than a
+  # devDependency: @lhci/cli's dependency tree carries advisories that would
+  # fail the audit gate below, for a tool that only ever runs in this job.
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx --yes @lhci/cli@0.15.1 autorun
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 14
 
   build:
     runs-on: ubuntu-24.04
