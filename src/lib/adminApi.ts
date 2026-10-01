@@ -42,6 +42,26 @@ export interface PipelineRunItem {
   error: string | null;
 }
 
+/** One source against its cadence: ceynex-core `data/freshness.py`, config/sources.yaml. */
+export interface SourceFreshnessItem {
+  source_id: string;
+  /** null: refreshed by hand from saved files, never counted stale. */
+  cadence_days: number | null;
+  /** Re-ingested by the monthly cron. */
+  refresh: boolean;
+  last_success_at: string | null;
+  last_success_rows: number | null;
+  last_failure_at: string | null;
+  last_error: string | null;
+  age_days: number | null;
+  stale: boolean;
+}
+
+export interface PipelineFreshness {
+  sources: SourceFreshnessItem[];
+  stale: number;
+}
+
 export interface DQFlagItem {
   flag_id: number;
   item: string | null;
@@ -114,6 +134,11 @@ export async function fetchPipelineStatus(): Promise<PipelineRunItem[]> {
   const res = await apiFetch("/api/admin/pipeline/status", { headers: authHeaders() });
   const data = await unwrap<{ runs: PipelineRunItem[] }>(res, "Loading pipeline status");
   return data.runs;
+}
+
+export async function fetchPipelineFreshness(): Promise<PipelineFreshness> {
+  const res = await apiFetch("/api/admin/pipeline/freshness", { headers: authHeaders() });
+  return unwrap<PipelineFreshness>(res, "Loading data freshness");
 }
 
 export async function fetchDQFlags(): Promise<DQFlagItem[]> {

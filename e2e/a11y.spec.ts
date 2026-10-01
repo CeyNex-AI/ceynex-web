@@ -102,6 +102,11 @@ test("admin", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Admin", exact: true })).toBeVisible();
   await page.waitForLoadState("networkidle");
   await expectNoSeriousA11yViolations(page, "admin");
+
+  // The pipeline section: the freshness table and the run log beneath it.
+  await page.getByRole("button", { name: "Pipeline", exact: true }).first().click();
+  await expect(page.getByRole("table", { name: "Data freshness by source" })).toBeVisible();
+  await expectNoSeriousA11yViolations(page, "admin pipeline");
 });
 
 test("scenario workbench", async ({ page }) => {
