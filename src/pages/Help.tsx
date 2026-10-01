@@ -175,7 +175,7 @@ export default function Help() {
   const shown = category === "all" ? FAQS : FAQS.filter((f) => f.category === category);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+    <div className="flex-1 bg-gray-50 p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="font-display text-2xl font-bold text-gray-900 mb-1.5 tracking-tight">Help &amp; FAQ</h1>
         <p className="text-sm text-gray-500 mb-4">

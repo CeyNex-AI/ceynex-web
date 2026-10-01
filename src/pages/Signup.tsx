@@ -57,7 +57,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex-1 flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="mb-2">
