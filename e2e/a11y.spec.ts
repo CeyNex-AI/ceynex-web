@@ -36,6 +36,16 @@ test("signup page, including its own error state", async ({ page }) => {
   await expectNoSeriousA11yViolations(page, "signup error");
 });
 
+test("notices page, reached from the footer while signed out", async ({ page }) => {
+  // Public on purpose: the footer links here from the sign-in pages, so terms
+  // and data credits are readable before anyone has an account.
+  await page.goto("/");
+  await page.getByRole("link", { name: "Notices and data sources" }).click();
+  await expect(page).toHaveURL(/\/notices$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Notices" })).toBeVisible();
+  await expectNoSeriousA11yViolations(page, "notices");
+});
+
 test("chat: empty, streaming, answered, and a follow-up", async ({ page }) => {
   await login(page);
   await expectNoSeriousA11yViolations(page, "chat empty");

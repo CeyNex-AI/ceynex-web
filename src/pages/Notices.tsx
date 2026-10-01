@@ -241,7 +241,7 @@ export default function Notices() {
             <ExternalLink href="/third-party-licenses.txt">third-party-licenses.txt</ExternalLink>. The
             server side runs on the following:
           </p>
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-sm">
               <caption className="sr-only">Server-side open-source components and their licences</caption>
               <thead>
