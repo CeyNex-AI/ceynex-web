@@ -452,7 +452,15 @@ function ParametersTable({ parameters }: { parameters: ScenarioParameter[] }) {
         basis of <strong>assumption</strong> is a judgment inside the range its source states, not a
         fitted estimate — shown as such rather than tidied away.
       </p>
-      <div className="overflow-x-auto">
+      {/* Focusable because it can scroll: at phone width the sourced citations
+          make the table wider than the screen, and a scroll area a keyboard
+          cannot reach fails axe's scrollable-region-focusable (serious). */}
+      <div
+        className="overflow-x-auto rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+        tabIndex={0}
+        role="group"
+        aria-label="Parameters table"
+      >
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
