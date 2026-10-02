@@ -22,7 +22,7 @@ export interface Breakdown {
 const PENALTIES: { key: keyof Breakdown; label: string; why: string }[] = [
   { key: "staleness", label: "Data age", why: "the most recent observation is not recent" },
   { key: "dq", label: "Source disagreement", why: "sources report materially different figures" },
-  { key: "coverage", label: "Incomplete coverage", why: "an analysis failed or ran degraded" },
+  { key: "coverage", label: "Incomplete coverage", why: "an analysis failed or ran degraded, or the evidence misses the years asked about" },
 ];
 
 function pct(value: number): string {
