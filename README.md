@@ -121,4 +121,4 @@ Production is built by `ceynex-infra/frontend/Dockerfile`. A `node:22-alpine` st
 
 ## Team
 
-Front end: Dhinanjaya Fernando (230181J), with contributions from Thisen Ekanayake (230170B). Team: Senindu Dinapura (230151T). Supervisor: Dr. Chathuranga Hettiarachchi, University of Moratuwa.
+Front end: Dhinanjaya Fernando (230181J), with contributions from Thisen Ekanayake (230170B). Team: Senindu Dinapura (230151T). Supervisor: Dr. Chathuranga Hettiarachchi. Teaching Assistant: Birunthaban Rajendram. University of Moratuwa.
